@@ -5,36 +5,81 @@
 
 .app__projects-h1 {
     font-family: var(--font-base);
-
     line-height: 117px;
-    font-size: 80px;
+    font-size: 50px;
 }
 
-.subheading {
-    font-family: var(--font-base);
-    color: black;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    line-height: 29.9px;
-    font-size: 23px;
+.app__projects-p {
+  font-family: var(--font-alt);
+  color: black;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  font-size: 16px;
+  margin-top: 30px;
+  margin-right: 30px;
 }
 
-.projectBox {
-  background-image: linear-gradient(to right bottom, #eaf7ff, #e3f0f8, #dce9f0, #d5e2e9, #cedbe2);
-  padding: 2rem;
-  width: 750px;
-  height: 500px;
-  border-radius: 15px;
-
-  border-color: #C8D7E0;
+.app__projects-h1-box {
+  width: 500px;
+  border-color: black;
   border-style: solid;
-  border-width: 3px;
-
+  align-self: center;
 }
 
-.textStyle {
-  font-family: var(--font-base);
-  font-size: 25px;
 
-  margin-top: 350px;
+.centerBoxes {
+  display: flex;
+  width: 100%;
+  background: #f5f7fa;
+  background-image: linear-gradient(to top, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 50px;
+  border-color: #647286;
+  border-width: 5px;
+  border-style: solid;
+  margin-bottom: 50px;
+}
+
+.centerBoxes:hover {
+  background-image: linear-gradient(to top, #f5f7fa 0%, rgb(183, 199, 225) 100%);
+}
+
+.projects__button {
+  background-image: linear-gradient(to bottom left, #f5f7fa 0%, #c3cfe2 100%);
+  color: var(--color-black);
+  font-family: var(--font-base);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 28px;
+  font-size: 16px;
+  border-color: #647286;
+  padding: 1rem 3rem;
+  border-radius: 10px;
+  margin-top: 20px;
+
+  cursor: pointer;
+  background-size: 200%;
+  background-position: left;
+  transition: background-position .4s;
+}
+
+.projects__button:hover,
+.projects__button:focus{
+  background-position: right;
+}
+
+.contentBox {
+  margin: 125px;
+}
+
+.images__projects {
+  width: 400px;
+  height: 500px;
+  object-fit: cover;
+  border-radius: 40px;
+  margin: 50px;
+  margin-right: 125px;
+
+  border-color: #f5f7fa;
+  border-style: solid;
+  border-width: 5px;
 }

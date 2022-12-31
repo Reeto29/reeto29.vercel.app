@@ -1,18 +1,20 @@
 .app__header {
     background-color: white;
 
+
 }
 
 .app__header-h1{
     background: #005c97;
-    background: linear-gradient(to right, #373b44, #4286f4); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+    background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
     background-size: 100%;
     background-repeat: repeat;
+    background-clip: 'white';
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent; 
     
 
-      animation: textshift-rev 0.75s ease forwards;
+    animation: textshift-rev 0.75s ease forwards;
   
   }
   
