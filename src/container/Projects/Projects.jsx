@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React from 'react';
 
 import { images } from "../../constants";
@@ -63,20 +62,3 @@ const Projects = () => (
 );
 
 export default Projects;
-=======
-import React from 'react';
-
-import { images } from "../../constants";
-import './Projects.css';
-
-const Projects = () => (
-  <div className='app__projects section__padding' id="Projects">
-      <div className="projectBox">
-        <p className ="textStyle">Basketball Bot</p>
-
-      </div>
-  </div>
-);
-
-export default Projects;
->>>>>>> d059be558a262729d5e5a66ef84c2a8797547c9f

@@ -8,15 +8,9 @@ const Header = () => (
       <img className='image__style' src={images.mylogo} alt="header img"></img>
       <div>
 
-<<<<<<< HEAD
-        <h1 className='app__header-h1'>Hi! I'm Reeto Ghosh.</h1>
-        <p className= 'subheading'style={{margin: '2rem 0'}}>
-          I am a first year student in Waterloo's Honours Mathematics program.
-=======
         <h1 className='app__header-h1'>Hi! My Name is Reeto.</h1>
         <p className= 'subheading'style={{margin: '2rem 0'}}>
           I am a first year student in Waterloos Honours Mathematics program.
->>>>>>> d059be558a262729d5e5a66ef84c2a8797547c9f
         </p>
 
         <div className='button__links'>
