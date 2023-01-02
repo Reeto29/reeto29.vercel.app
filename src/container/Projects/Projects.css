@@ -9,6 +9,13 @@
     font-size: 50px;
 }
 
+.app__projects-mainh1 {
+  font-family: var(--font-base);
+  line-height: 117px;
+  font-size: 75px;
+  margin-bottom: 30px;
+}
+
 .app__projects-p {
   font-family: var(--font-alt);
   color: black;
@@ -72,7 +79,7 @@
 }
 
 .images__projects {
-  width: 400px;
+  width: 415px;
   height: 500px;
   object-fit: cover;
   border-radius: 40px;

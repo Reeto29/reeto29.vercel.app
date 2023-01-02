@@ -5,6 +5,8 @@ import './Projects.css';
 
 const Projects = () => (
   <div className='app__projects section__padding' id="Projects">
+  <h1 className='app__projects-mainh1'>Projects</h1>
+
 
     <div class='centerBoxes'>
       <div class='contentBox'>
@@ -16,7 +18,7 @@ const Projects = () => (
           Naturally, there are plenty of tools to check player stats NBA players already, 
           so we thought we'd make this Discord Bot to do just that and more as a fun side-project!
         </p>
-        <form action="https://github.com/Reeto29" method="get" target="_blank">
+        <form action="https://github.com/Reeto29/basketball-bot" method="get" target="_blank">
          <button className='projects__button' type="submit">Click me</button>
         </form>
       </div>
@@ -28,7 +30,7 @@ const Projects = () => (
         <h1 class='app__projects-h1'>02: Music Player</h1>
         <div className='app__projects-h1-box'/>
         <p className='app__projects-p'>
-        As a means of learning about python GUIs I decided to create a music player using Tkinter and pygame. 
+        As a means of learning more about python GUIs I decided to create a music player using Tkinter and pygame. 
         Listening to music is one of my favorite hobbies, and so is graphic design, 
         so creating a working and aesthically pleasing MP3 player seemed like a fun challenge to me.
         </p>
@@ -36,7 +38,7 @@ const Projects = () => (
          <button className='projects__button' type="submit">Click me</button>
         </form>
       </div>
-      <img className="images__projects" src={images.iphone}/>
+      <video className="images__projects" src={images.musicPlayerVideo} type="video/mp4" controls/>
     </div>
 
     <div class='centerBoxes'>
@@ -53,7 +55,7 @@ const Projects = () => (
          <button className='projects__button' type="submit">Click me</button>
         </form>
       </div>
-      <img className="images__projects" src={images.iphone}/>
+      <video className="images__projects" src={images.bankingAppVideo} type="video/mp4" controls/>
     </div>
 
   </div>

@@ -8,7 +8,7 @@ const Navbar = () => {
         <li className="p__opensans"><a href="#home">Home</a></li>
         <li className="p__opensans"><a href="#about">About</a></li>
         <li className="p__opensans"><a href="#Projects">Projects</a></li>
-        <li className="p__opensans"><a href="#awards">Awards</a></li>
+        <li className="p__opensans"><a href="#Experience">Experience</a></li>
         <li className="p__opensans"><a href="#contact">Contact</a></li>
       </ul>
     </nav>
