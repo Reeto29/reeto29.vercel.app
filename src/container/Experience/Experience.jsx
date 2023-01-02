@@ -22,7 +22,7 @@ const Experience = () => (
          <button className='projects__button' type="submit">Click me</button>
         </form>
       </div>
-      <img className="images__experience" src={images.codeClub}/>
+      <img className="images__experience" src={images.codeClub} alt="code club image"/>
     </div>
 
     

@@ -22,7 +22,7 @@ const Projects = () => (
          <button className='projects__button' type="submit">Click me</button>
         </form>
       </div>
-      <img className="images__projects" src={images.iphone}/>
+      <img className="images__projects" src={images.iphone} alt="bballbot image"/>
     </div>
     
     <div class='centerBoxes'>
