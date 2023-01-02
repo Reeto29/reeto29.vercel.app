@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 .app__aboutus {
     background-color: white;
     border-radius: 30px;
@@ -21,3 +22,28 @@
     line-height: 29.9px;
     font-size: 23px;
 }
+=======
+.app__aboutus {
+    background-color: white;
+    border-radius: 30px;
+    border-color: black;
+    border-width: 2px;
+}
+
+.app__header-h1 {
+    font-family: var(--font-base);
+
+    line-height: 117px;
+    font-size: 80px;
+}
+
+
+.subheading {
+    font-family: var(--font-base);
+    color: black;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    line-height: 29.9px;
+    font-size: 23px;
+}
+>>>>>>> d059be558a262729d5e5a66ef84c2a8797547c9f
