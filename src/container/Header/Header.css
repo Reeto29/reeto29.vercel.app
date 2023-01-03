@@ -89,6 +89,8 @@
     border: none;
     outline: none;
     cursor: pointer;
+    margin:10px;
+
 }
 @media screen and (min-width: 2000px) {
     .app__header-h1 {

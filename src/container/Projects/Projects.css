@@ -5,7 +5,7 @@
 
 .app__projects-h1 {
     font-family: var(--font-base);
-    line-height: 117px;
+    line-height: 125%;
     font-size: 50px;
 }
 
@@ -96,9 +96,7 @@
 }
 
 @media screen and (min-width: 2000px) {
-  .app__projects-h1 {
-      font-size: 180px;
-  }
+
 }
 
 @media screen and (max-width: 1275px) {
@@ -106,12 +104,25 @@
       display: none;
   }
 
+
 }
 
 @media screen and (max-width: 650px) {
 
   .images__projects {
       display: none;
+  }
+  .contentBox {
+    margin:25px;
+  }
+  .app__projects-h1 {
+    font-size: 30px;
+  }
+  .app__projects-p {
+    width: 65vw;
+  }
+  .app__projects-h1-box{
+    width: 60vw;
   }
 }
 

@@ -8,7 +8,7 @@ const Experience = () => (
     <h1 className='app__experience-mainh1'>Experience</h1>
 
     <div class='centerBoxes'>
-      <div class='contentBoxExperience'>
+      <div class='contentBox'>
         <h1 class='app__experience-h1'>LDHSS Code Club</h1>
         <div className='app__projects-h1-box'/>
         <h2 class='app__experience-h2'> Co-Leader: November 2020 - June 2022</h2>
@@ -27,7 +27,7 @@ const Experience = () => (
 
     
     <div class='centerBoxes'>
-      <div class='contentBoxExperience'>
+      <div class='contentBox'>
         <h1 class='app__experience-h1'>LDHSS Roboravens</h1>
         <div className='app__projects-h1-box'/>
         <h2 class='app__experience-h2'> Design Team Member:</h2>
@@ -42,17 +42,7 @@ const Experience = () => (
          <button className='projects__button' type="submit">Click me</button>
         </form>
       </div>
-      <div class='contentBoxExperience'>
-        <h1 class='app__experience-h1'>UO STEM Camp</h1>
-        <div className='app__projects-h1-box'/>
-        <h2 class='app__experience-h2'> Volunteer: July 2018 - August 2018</h2>
-        <ul className='app__experience-p'>
-            <li> Helped introduce aspects of STEM such as dissections, labs, and coding to young children.  </li>
-            <li> Provided instructional support and assisted in daily project management decisions. </li>
-            <li> Quickly learned days content to increase intructional efficiency. </li>
-            <li> Volunteered for over 160 Hours. </li>
-        </ul>
-      </div>
+      <img className="images__experience" src={images.robotics} alt="code club image"/>
     </div>
    
 
