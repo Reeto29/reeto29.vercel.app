@@ -5,8 +5,9 @@ import './Header.css';
 
 const Header = () => (
   <div className="app__header app__wrapper section__padding" id="home">
+    <div className='aligner'>
       <img className='image__style' src={images.mylogo} alt="header img"></img>
-      <div>
+      <div className='headerBox'>
 
         <h1 className='app__header-h1'>Hi! My Name is Reeto.</h1>
         <p className= 'subheading'style={{margin: '2rem 0'}}>
@@ -16,23 +17,25 @@ const Header = () => (
         <div className='button__links'>
             <form action="https://github.com/Reeto29" target="_blank"> 
               <button className='buttonImage' type="submit">
-                <img className="image__styling" src={images.github} alt="GitHub"/>
+                <img className="button__styling" src={images.github} alt="GitHub"/>
               </button> 
             </form> 
 
             <form action="https://www.instagram.com/ldh_codeclub/" target="_blank"> 
             <button className='buttonImage' type="submit">
-                <img className="image__styling" src={images.instagram} alt="Instagram"/>
+                <img className="button__styling" src={images.instagram} alt="Instagram"/>
               </button> 
             </form> 
 
             <form action="https://www.linkedin.com/in/reetoghosh/" target="_blank"> 
             <button className='buttonImage' type="submit">
-                <img className="image__styling" src={images.linkedin} alt="Linkedin"/>
+                <img className="button__styling" src={images.linkedin} alt="Linkedin"/>
               </button> 
           </form> 
         </div>
       </div>
+
+    </div>
 
   </div>
   

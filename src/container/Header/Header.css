@@ -1,7 +1,15 @@
 .app__header {
     background-color: white;
+}
 
+.aligner{
+    display: flex;
+    align-content: space-between;
+    align-items: center;
+}
 
+.headerBox {
+    margin-left: 3%;
 }
 
 .app__header-h1{
@@ -47,14 +55,8 @@
   }
 
 
-
-
-
-
-
-
 .image__style {
-    width: 30%;
+    width: 33%;
 }
 
 .subheading {
@@ -74,7 +76,7 @@
 
 }
 
-.image__styling {
+.button__styling {
     width: 30px;
     top: 30px,
 }
@@ -87,4 +89,39 @@
     border: none;
     outline: none;
     cursor: pointer;
+}
+@media screen and (min-width: 2000px) {
+    .app__header-h1 {
+        font-size: 180px;
+        line-height: 210px;
+    }
+}
+
+@media screen and (max-width: 1150px) {
+    .app__header-h1 {
+        font-size: 90px;
+    }
+    .image__style {
+        display: none;
+    }
+}
+
+@media screen and (max-width: 650px) {
+    .app__header-h1 {
+        font-size: 70px;
+        line-height: 87px;
+    }
+    .image__style {
+        display: none;
+    }
+}
+
+@media screen and (max-width: 450px) {
+    .app__header-h1 {
+        font-size: 50px;
+        line-height: 70px;
+    }
+    .image__style {
+        display: none;
+    }
 }
