@@ -13,7 +13,7 @@ const App = () => (
     <Navbar />
     <Header />
     <Projects />
-    <Experience />
+    {/* <Experience /> */}
     
   </div>
 );

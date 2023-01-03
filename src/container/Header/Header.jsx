@@ -11,7 +11,7 @@ const Header = () => (
 
         <h1 className='app__header-h1'>Hi! My Name is Reeto.</h1>
         <p className= 'subheading'style={{margin: '2rem 0'}}>
-          I am a first year student in Waterloos Honours Mathematics program.
+          I am a first year student in Waterloo's Honours Mathematics program.
         </p>
 
         <div className='button__links'>
