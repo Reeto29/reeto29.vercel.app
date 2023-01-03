@@ -4,7 +4,7 @@ import { images } from "../../constants";
 import './Projects.css';
 
 const Projects = () => (
-  <div className='app__projects section__padding' id="Projects">
+  <div className='app__projects section__padding' id="projects">
   <h1 className='app__projects-mainh1'>Projects</h1>
 
 
