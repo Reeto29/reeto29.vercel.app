@@ -34,7 +34,7 @@ const Projects = () => (
         Listening to music is one of my favorite hobbies, and so is graphic design, 
         so creating a working and aesthically pleasing MP3 player seemed like a fun challenge to me.
         </p>
-        <form action="github.com/Reeto29/Music-Player" method="get" target="_blank">
+        <form action="https://github.com/Reeto29/Music-Player" method="get" target="_blank">
          <button className='projects__button' type="submit">Click me</button>
         </form>
       </div>
@@ -51,7 +51,7 @@ const Projects = () => (
         It rudimentarily calculates tax and interest of the bank balance. Allows for transfer funds between accounts. 
         Allows deposit or withdrawal of money.
         </p>
-        <form action="https://github.com/Reeto29" method="get" target="_blank">
+        <form action="https://github.com/Reeto29/BankingAPP" method="get" target="_blank">
          <button className='projects__button' type="submit">Click me</button>
         </form>
       </div>

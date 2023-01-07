@@ -83,7 +83,6 @@
 
 .buttonImage {
     background-color: white;
-    color: var(--color-black);
     font-family: var(--font-base);
 
     border: none;

@@ -9,7 +9,6 @@ const Navbar = () => {
     <nav className="app__navbar">
       <ul className="app__navbar-links">
         <li className="p__opensans"><a href="#home">Home</a></li>
-        <li className="p__opensans"><a href="#about">About</a></li>
         <li className="p__opensans"><a href="#projects">Projects</a></li>
         <li className="p__opensans"><a href="#experience">Experience</a></li>
         <li className="p__opensans"><a href="#contact">Contact</a></li>
@@ -21,7 +20,6 @@ const Navbar = () => {
             <MdCloseFullscreen fontSize={27} className="overlay__close" onClick={() => setToggleMenu(false)} />
             <ul className="app__navbar-smallscreen_links">
               <li><a href="#home" onClick={() => setToggleMenu(false)}>Home</a></li>
-              <li><a href="#about" onClick={() => setToggleMenu(false)}>About</a></li>
               <li><a href="#projects" onClick={() => setToggleMenu(false)}>Projects</a></li>
               <li><a href="#experience" onClick={() => setToggleMenu(false)}>Experience</a></li>
               <li><a href="#contact" onClick={() => setToggleMenu(false)}>Contact</a></li>

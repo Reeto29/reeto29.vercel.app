@@ -1,0 +1,22 @@
+
+  .footerBox{
+    display: flex;
+      box-shadow: 0 1px 1px 0 rgb(255, 255, 255);
+      box-sizing: border-box;
+      width: 150px;
+      font: bold 16px sans-serif;
+      overflow: hidden;
+      background-color: #f1f6fe;
+      border-radius: 30px;
+      margin: auto;
+  }
+
+  .footerBox button{
+    background-color: #f1f6fe;
+  }
+
+  .footerBoxbg{
+    background-color: #ebf3ff;
+    padding: 50px 60px 40px;
+
+  }
