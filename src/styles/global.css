@@ -1,0 +1,104 @@
+/*
+  Dark only, single accent, alpha ladder for hierarchy.
+  The alpha steps are contrast-checked in src/test/theme.test.ts against #0d0e10.
+*/
+:root {
+  --bg: #0d0e10;
+  --accent: #7aa2f7;
+
+  --t-full: #ffffff;
+  --t-primary: rgb(255 255 255 / 92%);
+  --t-secondary: rgb(255 255 255 / 80%);
+  --t-meta: rgb(255 255 255 / 68%);
+  --t-label: rgb(255 255 255 / 60%);
+
+  --row-hover: rgb(255 255 255 / 3.5%);
+  --hairline: rgb(255 255 255 / 6%);
+
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: 'Fraunces', ui-serif, Georgia, serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --label-track: 0.18em;
+  --shell: 62rem;
+  --rail: 9.5rem;
+
+  /* Height of the warped photo grid behind the masthead. */
+  --hero-h: 12rem;
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 2rem;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--t-primary);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul,
+ol {
+  list-style: none;
+  padding: 0;
+}
+
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+@media (min-width: 40rem) {
+  :root {
+    --hero-h: 25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

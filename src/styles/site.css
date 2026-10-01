@@ -1,0 +1,325 @@
+.shell {
+  position: relative;
+  z-index: 1;
+}
+
+/* Name and intro share the top line, so the masthead uses the full width. */
+.masthead {
+  position: relative;
+  z-index: 1;
+  /*
+    Fills the grid band so the name lands low, in the part of the scrim that is
+    nearly opaque. Padding at the top keeps it off the band edge.
+  */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: var(--hero-h);
+  padding: 3.5rem 0 2rem;
+}
+
+.masthead__name {
+  font-family: var(--font-serif);
+  font-size: clamp(2.25rem, 6vw, 3.25rem);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.015em;
+  /*
+    Fraunces is a variable face. Opting out of its optical-size axis stops the
+    display cut from thinning out, which otherwise leaves the name looking
+    spindly next to DM Sans.
+  */
+  font-variation-settings:
+    'SOFT' 0,
+    'WONK' 1,
+    'opsz' 60;
+}
+
+.masthead__meta {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 1rem;
+  align-items: baseline;
+  color: var(--t-meta);
+  font-size: 14px;
+}
+
+.masthead__at {
+  color: var(--t-label);
+}
+
+.masthead__degree {
+  color: var(--t-secondary);
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-style: italic;
+  font-variation-settings:
+    'SOFT' 0,
+    'WONK' 0,
+    'opsz' 20;
+}
+
+.masthead__summary {
+  /* Caps the measure to roughly 70 characters rather than letting it run the
+     full 992px column. */
+  max-width: 34em;
+  margin-top: 1.25rem;
+  color: var(--t-meta);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* Rows: meta column on the left, prose on the right. */
+.rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.25rem;
+  padding: 1rem 0.75rem 1.25rem;
+  margin-inline: -0.75rem;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
+@media (min-width: 46rem) {
+  .row {
+    grid-template-columns: 13rem minmax(0, 1fr);
+    gap: 0 2rem;
+  }
+}
+
+.rows > .row:hover {
+  background: var(--row-hover);
+}
+
+.row--static:hover {
+  background: transparent;
+}
+
+/* Divider between entries, which is how the eye separates them. */
+.row + .row {
+  border-top: 1px solid var(--hairline);
+}
+
+.row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  /* Without this the wrapped lines get stretched apart when the grid cell is
+     taller than the meta block, e.g. next to a long bullet list. */
+  align-content: flex-start;
+  gap: 0.25rem 0.5rem;
+  font-size: 14px;
+}
+
+.row__title {
+  color: var(--t-primary);
+  font-weight: 500;
+}
+
+.row__title--serif {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-style: italic;
+  line-height: 1.3;
+  font-variation-settings:
+    'SOFT' 0,
+    'WONK' 0,
+    'opsz' 24;
+}
+
+.row__org {
+  color: var(--t-secondary);
+  transition: color 0.15s ease;
+}
+
+.rows > .row:hover .row__org {
+  color: var(--t-primary);
+}
+
+.row__at {
+  color: var(--t-label);
+}
+
+.row__dates {
+  color: var(--t-label);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.row__where {
+  width: 100%;
+  color: var(--t-label);
+  font-size: 12px;
+}
+
+.row__body {
+  min-width: 0;
+}
+
+.row__desc {
+  color: var(--t-meta);
+  font-size: 14px;
+}
+
+.row__notes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.625rem;
+  color: var(--t-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.row__notes li {
+  position: relative;
+  padding-left: 0.875rem;
+}
+
+.row__notes li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.72em;
+  width: 4px;
+  height: 1px;
+  background: var(--t-label);
+}
+
+.row__stack {
+  margin-top: 0.625rem;
+  color: var(--t-label);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.row__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--t-secondary);
+  transition: color 0.15s ease;
+}
+
+.row__link .sweep {
+  color: inherit;
+}
+
+.row__link:hover {
+  color: var(--accent);
+}
+
+.row__arrow {
+  color: var(--t-label);
+  transition: color 0.15s ease;
+}
+
+.row__link:hover .row__arrow {
+  color: var(--accent);
+}
+
+.row__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.875rem;
+  font-size: 14px;
+}
+
+.inline-arrow {
+  display: inline-block;
+  margin-left: 0.25rem;
+  vertical-align: baseline;
+}
+
+/* Skills sit in two columns so the section fills the width without cards. */
+.skills {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem 3rem;
+}
+
+@media (min-width: 46rem) {
+  .skills {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.skills__row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.25rem;
+}
+
+.skills--inset {
+  margin-top: 1.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.skills__key {
+  color: var(--t-label);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--label-track);
+}
+
+.skills__val {
+  margin: 0;
+  color: var(--t-secondary);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.contact__line {
+  font-size: 15px;
+}
+
+.contact__line + .contact__line {
+  margin-top: 0.5rem;
+}
+
+.contact__sep {
+  color: var(--t-label);
+}
+
+.contact__note {
+  margin-top: 1.5rem;
+  color: var(--t-label);
+  font-size: 13px;
+}
+
+.footnote {
+  margin-top: 1.75rem;
+  color: var(--t-label);
+  font-size: 12px;
+}
+
+.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-top: 5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--hairline);
+  color: var(--t-label);
+  font-size: 12px;
+}
+
+.site-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
