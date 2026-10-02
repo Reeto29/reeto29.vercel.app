@@ -12,7 +12,11 @@ function Entry({ entry }: { entry: ExperienceEntry }) {
         <span className="row__title">{entry.role}</span>
         <span className="row__org">
           <span className="row__at">@</span>
-          {entry.company}
+          <a className="sweep" href={entry.url} target="_blank" rel="noopener noreferrer">
+            {entry.company}
+            <ExternalArrow className="inline-arrow" />
+            <span className="visually-hidden"> (opens in new tab)</span>
+          </a>
         </span>
         <span className="row__dates">
           {startYear === endYear ? startYear : `${startYear} – ${endYear}`}

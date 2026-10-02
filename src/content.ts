@@ -35,6 +35,7 @@ export const socials: SocialLink[] = [
 export const experience: Experience[] = [
   {
     company: 'Theory Ventures',
+    url: 'https://theoryvc.com/',
     location: 'San Francisco, CA',
     role: 'AI Engineer Intern',
     focus: 'async agent tasks, autonomous research',
@@ -50,6 +51,7 @@ export const experience: Experience[] = [
   },
   {
     company: 'Wealthsimple',
+    url: 'https://www.wealthsimple.com/en-ca',
     location: 'Toronto, ON',
     role: 'Software Engineer Intern',
     focus: 'product analytics, data quality',
@@ -65,6 +67,7 @@ export const experience: Experience[] = [
   },
   {
     company: 'Toronto Stock Exchange',
+    url: 'https://www.tsx.com/',
     location: 'Toronto, ON',
     role: 'Software Engineer Intern',
     focus: 'market surveillance, query cost',
@@ -79,6 +82,7 @@ export const experience: Experience[] = [
   },
   {
     company: 'Bank of Canada',
+    url: 'https://www.bankofcanada.ca/',
     location: 'Ottawa, ON',
     role: 'Software Engineer Intern',
     focus: 'commodities pipelines, applied nlp',
@@ -92,7 +96,23 @@ export const experience: Experience[] = [
     ],
   },
   {
+    company: 'École de Technologie Supérieure',
+    url: 'https://www.etsmtl.ca/',
+    location: 'Montreal, QC',
+    role: 'Research Intern',
+    focus: 'high-performance computing, bayesian optimization',
+    tech: ['C', 'Python', 'SimGrid', 'ytopt'],
+    startDate: 'Jan 2024',
+    endDate: 'Apr 2024',
+    highlights: [
+      'Conducted NSERC-funded research in high-performance computing, using SimGrid and Bayesian optimization to tune large-scale simulations.',
+      'Implemented compiler optimization techniques in C, achieving a 10% reduction in overall simulation runtime.',
+      'Validated Bayesian-optimized simulations against baselines by analyzing Pearson correlation and Euclidean distance.',
+    ],
+  },
+  {
     company: 'Ciena Corporation',
+    url: 'https://www.ciena.com/',
     location: 'Ottawa, ON',
     role: 'Software Engineer Intern',
     focus: 'log triage, internal tooling',

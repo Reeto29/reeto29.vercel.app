@@ -36,7 +36,7 @@ describe('App', () => {
     }
   });
 
-  it('renders all five internships with company and year', () => {
+  it('renders all six internships with company and year', () => {
     render(<App />);
 
     for (const company of [
@@ -44,6 +44,7 @@ describe('App', () => {
       'Wealthsimple',
       'Toronto Stock Exchange',
       'Bank of Canada',
+      'École de Technologie Supérieure',
       'Ciena Corporation',
     ]) {
       expect(screen.getByText(company)).toBeInTheDocument();

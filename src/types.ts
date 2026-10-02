@@ -1,5 +1,7 @@
 export type Experience = {
   company: string;
+  /** Company site the company name links to. */
+  url: string;
   location: string;
   role: string;
   /** Short phrase naming what the work covered, e.g. "agent infrastructure". */

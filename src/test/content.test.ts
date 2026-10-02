@@ -27,6 +27,12 @@ describe('content integrity', () => {
     expect(years).toEqual([...years].sort((a, b) => b - a));
   });
 
+  it('links every role to its company site over https', () => {
+    for (const entry of experience) {
+      expect(entry.url, `no company url: ${entry.company}`).toMatch(/^https:\/\//);
+    }
+  });
+
   it('keeps the most recent internship first', () => {
     expect(experience[0].company).toBe('Theory Ventures');
   });
