@@ -1,16 +1,17 @@
 import { useEffect, useRef, type CSSProperties } from 'react';
-import { grid, photos, spin } from '../photos';
+import { photos, spin } from '../photos';
 import './PhotoGrid.css';
 
 /**
- * Rotating photo grid behind the masthead.
+ * Rotating photo ring behind the masthead.
  *
- * One number drives everything: the Y rotation, written to a single custom
- * property as `--spin`. The default motion is a slow sinusoidal sway; dragging or
- * arrow keys add a manual offset on top, which then drifts back to centre so the
- * grid never gets stuck at an angle the reader did not ask for.
+ * One number drives everything: the ring's rotation, written to a single custom
+ * property as `--spin` on the stage and added to each tile's own angle on the
+ * cylinder. The default motion is a slow sinusoidal drift; dragging or arrow keys
+ * add a manual offset on top, which then drifts back to centre so the ring never
+ * gets stuck at an angle the reader did not ask for.
  *
- * The grid is decorative, so it is described in one label rather than per image,
+ * The ring is decorative, so it is described in one label rather than per image,
  * and it is keyboard operable because it moves on its own.
  */
 export function PhotoGrid() {
@@ -45,22 +46,13 @@ export function PhotoGrid() {
       spin.autoRange * Math.sin((2 * Math.PI * elapsed) / spin.autoPeriod) + manual;
 
     /*
-      Both properties are written to the stage, which .grid__field inherits
-      from. Writing them to the field itself would work too, but the stylesheet
-      must not redeclare either name on the field, or a local declaration would
-      outrank the animated value and silently freeze the motion.
-
-      The horizontal shift is coupled to the angle because rotation alone is
-      mostly a scaling effect: even at 34 degrees the band slides only a little
-      on its own. Adding travel proportional to the same angle makes tiles enter
-      and leave the frame the way they would on a carousel. Proportional rather
-      than sin-shaped so the two stay in step at every point in the cycle.
+      --spin is written to the stage, which every tile inherits and adds to its own
+      ring angle. Writing it to a tile would work too, but the stylesheet must not
+      redeclare the name on the tile: a local declaration outranks an animated one
+      and would silently freeze that tile's motion.
     */
     const paint = () => {
-      const angle = totalAngle();
-
-      node.style.setProperty('--spin', `${angle.toFixed(2)}deg`);
-      node.style.setProperty('--shift', `${(angle * spin.shiftPerDegree).toFixed(2)}px`);
+      node.style.setProperty('--spin', `${totalAngle().toFixed(2)}deg`);
     };
 
     const tick = (now: number) => {
@@ -184,17 +176,22 @@ export function PhotoGrid() {
     };
   }, []);
 
-  const tiles = Array.from({ length: grid.columns * grid.rows }, (_, index) => {
-    const column = index % grid.columns;
-    const row = Math.floor(index / grid.columns);
+  /*
+    Each tile gets its index on the ring. The stylesheet turns that into an angle
+    by multiplying by --step, which it derives from the tile size, so the ring
+    stays correctly spaced when the tiles shrink at a breakpoint. Measuring the
+    angle here instead would bake in the desktop spacing and break the phone one.
 
-    // -1 at the outer columns, 1 in the middle. Drives how far each tile is
-    // pushed back, which is what makes the row read as curved.
-    const half = (grid.columns - 1) / 2;
-    const u = half === 0 ? 0 : (column - half) / half;
-
-    return { photo: photos[index % photos.length], u, key: `${row}-${column}` };
-  });
+    The indices are offset from the centre so the band straddles the axis
+    symmetrically. The animated `--spin` is added on top, which orbits every tile
+    together without any of them needing to know where the others are.
+  */
+  const half = (photos.length - 1) / 2;
+  const tiles = Array.from({ length: photos.length }, (_, index) => ({
+    photo: photos[index] as (typeof photos)[number],
+    slot: index - half,
+    key: index,
+  }));
 
   return (
     <div
@@ -208,27 +205,35 @@ export function PhotoGrid() {
     >
       <div className="grid__viewport">
         <div className="grid__field">
-          {tiles.map(({ photo, u, key }) => (
-            <div
-              className="grid__tile"
-              key={key}
-              style={
-                {
-                  '--u': u.toFixed(3),
-                  '--zoom': (1.08 + ((u + 1) / 2) * 0.12).toFixed(2),
-                } as CSSProperties
-              }
-            >
-              {/*
-                No loading="lazy" here. The band is one row ten tiles wide, so
-                most tiles start parked outside the viewport and lazy loading
-                never fetches them. They then swing into view as empty frames as
-                the carousel turns. The whole set is needed for the first sweep,
-                so it is fetched up front.
-              */}
-              <img className="grid__img" src={photo.src} alt="" decoding="async" />
-            </div>
-          ))}
+          {tiles.map(({ photo, slot, key }) => {
+            // Normalised distance from the centre of the ring, -1 to 1. The image
+            // is scaled up slightly further out, which counteracts the
+            // perspective foreshortening so the photos near the edges do not read
+            // as shrunken copies of the ones in the middle.
+            const u = half === 0 ? 0 : key / half;
+
+            return (
+              <div
+                className="grid__tile"
+                key={key}
+                style={
+                  {
+                    '--i': String(slot),
+                    '--zoom': (1.06 + ((u + 1) / 2) * 0.1).toFixed(2),
+                  } as CSSProperties
+                }
+              >
+                {/*
+                  No loading="lazy" here. The ring spans roughly 100 degrees, so
+                  most tiles start outside the viewport and lazy loading never
+                  fetches them. They then swing into view as empty frames as the
+                  carousel turns. The whole set is needed for the first sweep, so
+                  it is fetched up front.
+                */}
+                <img className="grid__img" src={photo.src} alt="" decoding="async" />
+              </div>
+            );
+          })}
         </div>
       </div>
 

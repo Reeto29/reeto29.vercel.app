@@ -8,7 +8,14 @@
   position: absolute;
   inset: 0 0 auto;
   height: var(--hero-h);
-  perspective: 1400px;
+  /*
+    Kept well outside the ring radius. Perspective divides by (distance - z), so
+    a near tile balloons as the denominator shrinks; at 2600 against a 1500 ring
+    the closest tile scales by about 1.4x while the furthest shrinks to about
+    0.75x, which is enough to read as depth without the band looking like a
+    fish-eye.
+  */
+  perspective: 3400px;
   perspective-origin: 50% 45%;
 }
 
@@ -37,44 +44,63 @@
 }
 
 /*
-  --spin and --shift are written to the stage by the rAF loop and inherited down
-  to this element. Do NOT redeclare them here: a declaration on the element
-  itself beats an inherited one, so a local `--spin: 0deg` would silently shadow
-  the animation and pin the field at zero rotation. Both are read back through
-  var() defaults below instead.
+  The band is a ring of photos on a cylinder, not one flat plane. `--spin` is the
+  ring's rotation, written to the stage by the rAF loop and inherited down to this
+  element. Do NOT redeclare it here: a declaration on the element itself beats an
+  inherited one, so a local `--spin: 0deg` would silently shadow the animation and
+  pin the ring still. It is read back through a var() default below instead.
+
+  The field is only a positioning context. It carries no rotation of its own and no
+  translation; each tile places itself on the ring.
 */
 .grid__field {
+  /*
+    The ring's geometry. `--step-deg` is the angle between neighbours that puts
+    them side by side, kept as a bare number and turned into an angle below.
+
+    It cannot be derived here: the step is a length over a length, and CSS calc
+    forbids dividing one length by another. The exact chord solution would need
+    asin(), which this Chrome build does not support -- and because a custom
+    property holding an unsupported function is still accepted as a token stream
+    rather than dropped, that silently breaks every transform reading it. So the
+    value lives here as a number and ringStep() in photos.ts computes the same
+    thing for tests to compare against.
+  */
+  --tile: 360px;
+  --gap: 20px;
+  --radius: 2050px;
+  --step-deg: 10.621;
+  --step: calc(var(--step-deg) * 1deg);
+
   position: absolute;
   top: 50%;
   left: 50%;
   width: max-content;
-  display: grid;
-  grid-template-columns: repeat(10, 360px);
-  gap: 20px;
-  /*
-    --shift is the horizontal travel coupled to the rotation, written by the rAF
-    loop. Without it the sweep reads as a wobble rather than a carousel, because
-    rotating a plane about Y is mostly a scaling effect at the amplitudes this
-    band can afford.
-  */
-  transform: translate3d(calc(-50% + var(--shift, 0px)), -50%, 0) rotateY(var(--spin, 0deg))
-    rotateX(5deg);
+  height: var(--tile);
+  transform: translate3d(-50%, -50%, 0);
   transform-style: preserve-3d;
 }
 
 .grid__tile {
   /*
-    Outer columns sit further back so the grid reads as curved even at spin 0.
-    Keep the depth modest: perspective scales a tile by 1400 / (1400 - depth),
-    and too much depth projects tiles past the viewport's own clipping box, which
-    silently eats the middle of the grid.
-  */
-  --depth: calc((1 - var(--u) * var(--u)) * 58px);
+    One step around the ring: turn to this tile's own angle, then step back along
+    the radius to the ring's surface. `rotateY` before `translateZ` puts the tile
+    at its own point on the ring with its face turned to match, which is what
+    makes the row a spinning ring rather than a slab rotating as one piece.
 
-  position: relative;
-  width: 360px;
-  height: 360px;
-  transform: translateZ(calc(var(--depth) * -1));
+    --i is the tile's index and --step is inherited from the field, so the angle
+    follows automatically when the tile size changes at a breakpoint.
+  */
+  --i: 0;
+  --a: calc(var(--i) * var(--step));
+
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--tile);
+  height: var(--tile);
+  transform: translateX(-50%) rotateY(calc(var(--a) + var(--spin, 0deg)))
+    translateZ(calc(var(--radius) * -1));
   border-radius: 12px;
   overflow: hidden;
   background: var(--bg-subtle);
@@ -111,19 +137,16 @@
 
 @media (max-width: 40rem) {
   /*
-    Shrink the tiles rather than dropping columns, so the grid keeps its shape.
-    The field stays wider than the phone on purpose: rotating it sweeps the outer
-    columns through view, which is the whole point of the effect.
+    Shrink the tiles rather than dropping any, so the ring keeps its shape. The
+    step is re-derived from the smaller tile automatically, so the band stays
+    gapless at this size too. The band stays wider than the phone on purpose:
+    turning the ring sweeps the outer photos through view, which is the whole
+    point of the effect.
   */
   .grid__field {
-    grid-template-columns: repeat(10, 150px);
-    gap: 10px;
-  }
-
-  .grid__tile {
-    width: 150px;
-    height: 150px;
-    border-radius: 12px;
+    --tile: 150px;
+    --gap: 10px;
+    --step-deg: 4.471;
   }
 }
 

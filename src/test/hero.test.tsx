@@ -3,7 +3,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { PhotoGrid } from '../components/PhotoGrid';
-import { grid, photos, spin } from '../photos';
+import { cylinder, grid, photos, ringStep, spin } from '../photos';
 
 // import.meta.url is an http URL under the jsdom environment, so resolve from
 // the project root instead.
@@ -64,20 +64,28 @@ function advance(seconds: number, step = 16) {
   }
 }
 
-describe('photo grid', () => {
-  it('has one photo per tile so nothing repeats', () => {
-    expect(photos.length).toBe(grid.columns * grid.rows);
+describe('photo ring', () => {
+  it('has one tile per photo so nothing repeats', () => {
     expect(new Set(photos.map((photo) => photo.src)).size).toBe(photos.length);
+
+    const { container } = render(<PhotoGrid />);
+    expect(container.querySelectorAll('.grid__tile')).toHaveLength(photos.length);
   });
 
-  it('is wider than it is tall, sized to span the viewport', () => {
-    const fieldWidth = grid.columns * grid.tile + (grid.columns - 1) * grid.gap;
-    const fieldHeight = grid.rows * grid.tile + (grid.rows - 1) * grid.gap;
+  it('spans wide enough to read as a band rather than a block of tiles', () => {
+    // The band is no longer a column track, so its width comes from the arc the
+    // ring covers: half the photos either side, each one step apart.
+    const step = ringStep(grid.tile, grid.gap);
+    const halfSpan = ((photos.length - 1) / 2) * step;
 
-    expect(grid.columns).toBeGreaterThan(grid.rows);
-    // Wide enough to read as a band across the page rather than a block of tiles.
-    expect(fieldWidth).toBeGreaterThan(1000);
-    expect(fieldHeight).toBeLessThan(fieldWidth);
+    // Roughly 100 degrees of ring in total, which is enough curvature to read as
+    // a ring without pushing the outermost tiles far enough round to face away.
+    expect(halfSpan * 2).toBeGreaterThan(80);
+    expect(halfSpan * 2).toBeLessThan(140);
+
+    // Chords, not arc length, are what actually crosses the frame.
+    const chord = 2 * cylinder.radius * Math.sin(((halfSpan + step) * Math.PI) / 360);
+    expect(chord).toBeGreaterThan(1000);
   });
 
   it('keeps every photo in public/photos as a real image', () => {
@@ -143,8 +151,28 @@ describe('photo grid', () => {
     expect(new Set(photos.map((photo) => photo.alt)).size).toBe(photos.length);
   });
 
-  it('keeps the column count in the markup and the stylesheet in agreement', () => {
-    expect(gridCss).toContain(`repeat(${grid.columns}, ${grid.tile}px)`);
+  it('gives every tile its own slot on the ring, symmetric about the axis', () => {
+    const { container } = render(<PhotoGrid />);
+    const slots = [...container.querySelectorAll<HTMLElement>('.grid__tile')].map((tile) =>
+      Number.parseFloat(tile.style.getPropertyValue('--i')),
+    );
+
+    expect(slots).toHaveLength(photos.length);
+
+    // Symmetric about zero: as far to the left of the axis as to the right, so
+    // the band straddles the centre of the viewport.
+    const first = slots[0] as number;
+    const last = slots[slots.length - 1] as number;
+    expect(first).toBeCloseTo(-last, 5);
+
+    // Whole slots, one apart, with no repeats.
+    const expected = Array.from({ length: photos.length }, (_, i) => i - (photos.length - 1) / 2);
+    expect(slots).toEqual(expected);
+    expect(new Set(slots).size).toBe(photos.length);
+
+    // The angle comes from the stylesheet multiplying slot by step, so that a
+    // change of tile size at a breakpoint stays correct without touching markup.
+    expect(gridCss).toMatch(/--a:\s*calc\(var\(--i\)\s*\*\s*var\(--step\)\)/);
   });
 
   it('stacks the grid behind the type, not in front of it', () => {
@@ -153,9 +181,12 @@ describe('photo grid', () => {
     expect(gridCss).toMatch(/\.grid__scrim\s*\{[^}]*z-index:\s*-1/);
   });
 
-  it('rotates the field rather than the whole stage', () => {
-    // Rotating the stage would carry the scrim and the mask around with it.
-    expect(gridCss).toMatch(/\.grid__field\s*\{[^}]*rotateY\(var\(--spin/);
+  it('rotates the tiles rather than the whole stage', () => {
+    // Rotating the stage or the field would carry the scrim and the mask around
+    // with it, and would put every tile through the same foreshortening, which is
+    // the slab that read as squishing rather than turning.
+    expect(gridCss).not.toMatch(/\.grid__stage\s*\{[^}]*rotateY/);
+    expect(gridCss).toMatch(/\.grid__tile\s*\{[^}]*rotateY/);
   });
 
   it('lets the stage drive the field instead of shadowing it locally', () => {
@@ -168,23 +199,23 @@ describe('photo grid', () => {
     const fieldBlock = gridCss.match(/\.grid__field\s*\{([^}]*)\}/)?.[1] ?? '';
 
     expect(fieldBlock, '.grid__field redeclares --spin').not.toMatch(/--spin\s*:/);
-    expect(fieldBlock, '.grid__field redeclares --shift').not.toMatch(/--shift\s*:/);
 
-    // The transform must carry a default so the field is still valid before the
+    // The transform must carry a default so the ring is still valid before the
     // loop paints its first frame.
-    expect(gridCss).toMatch(/rotateY\(var\(--spin,\s*0deg\)\)/);
-    expect(gridCss).toMatch(/var\(--shift,\s*0px\)/);
+    expect(gridCss).toMatch(/rotateY\(calc\(var\(--a\)\s*\+\s*var\(--spin,\s*0deg\)\)\)/);
   });
 
-  it('writes the animation properties to the stage the field inherits from', () => {
-    // Guards the write target itself: the loop's node and the field's parent
-    // have to be the same element, or the coupling above is broken again.
+  it('writes the animation property to the stage the tiles inherit from', () => {
+    // Guards the write target itself: the loop's node and the tiles' ancestor have
+    // to be the same element, or the coupling above is broken again.
     expect(gridCss).toMatch(/\.grid__field\s*\{[^}]*position:\s*absolute/);
     expect(gridCss).toMatch(/\.grid__viewport\s*\{[^}]*position:\s*absolute/);
-    // --shift exists only on the stage, so if the field is inside the viewport
-    // inside the stage, the inheritance chain is stage -> viewport -> field.
     expect(gridCss).not.toMatch(/\.grid__viewport\s*\{[^}]*--spin\s*:/);
-    expect(gridCss).not.toMatch(/\.grid__viewport\s*\{[^}]*--shift\s*:/);
+
+    // Same hazard one level down: a local --spin on a tile would outrank the
+    // inherited animated value and freeze that tile in place.
+    const tileBlock = gridCss.match(/\.grid__tile\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(tileBlock, '.grid__tile redeclares --spin').not.toMatch(/--spin\s*:/);
   });
 
   it('sways rather than spinning a full turn', () => {
@@ -203,17 +234,92 @@ describe('photo grid', () => {
     expect(spin.autoRange).toBeLessThan(50);
   });
 
-  it('travels horizontally as it turns, since rotation alone barely moves the band', () => {
-    // A rotateY is mostly a scaling effect, so without this coupling the sweep
-    // slides the photos a few dozen pixels and reads as a wobble.
-    expect(spin.shiftPerDegree).toBeGreaterThan(0);
-    // A third of a tile per degree: enough travel to read, not so much that the
-    // band races off frame at the extremes.
-    expect(spin.shiftPerDegree * spin.autoRange).toBeGreaterThan(300);
-    expect(spin.shiftPerDegree * spin.autoRange).toBeLessThan(900);
+  it('lays the band out on a cylinder rather than one flat plane', () => {
+    // A flat plane rotated about Y foreshortens every tile by the same amount,
+    // so the row reads as a slab squishing side to side. Each tile has to turn
+    // to its own ring angle and step back along the radius.
+    expect(gridCss).toMatch(
+      /\.grid__tile\s*\{[^}]*transform:\s*translateX\(-50%\) rotateY\(calc\(var\(--a\)\s*\+\s*var\(--spin/,
+    );
+    expect(gridCss).toMatch(/translateZ\(calc\(var\(--radius\)\s*\*\s*-1\)\)/);
 
-    // The stylesheet has to consume it, or the coupling is dead code.
-    expect(gridCss).toMatch(/translate3d\(calc\(-50% \+ var\(--shift/);
+    // The field must not carry the rotation itself; that is the whole point of
+    // the change, since a rotating field is exactly the slab that squished.
+    const fieldBlock = gridCss.match(/\.grid__field\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(fieldBlock, '.grid__field still rotates').not.toMatch(/rotateY/);
+
+    // A column track would reserve space the absolutely-placed tiles never use.
+    expect(fieldBlock).not.toMatch(/grid-template-columns\s*:/);
+  });
+
+  it('computes the ring step from plain arithmetic CSS can actually resolve', () => {
+    // The step is a length over a length, and CSS calc refuses to divide one
+    // length by another, so it cannot be derived in the stylesheet. The exact
+    // chord solution needs asin(); where that is unsupported the custom property
+    // is still accepted as a token stream rather than dropped, so it substitutes
+    // into every transform that reads it and silently invalidates all of them.
+    // The symptom is the entire band collapsing to one spot with no visible
+    // cause, which is exactly what happened here.
+    const field = gridCss.match(/\.grid__field\s*\{([^}]*)\}/)?.[1] ?? '';
+    // Comments explain the asin() trap and would match a naive search, so strip
+    // them before asserting on what the rule actually declares.
+    const declared = field.replace(/\/\*[\s\S]*?\*\//g, '');
+
+    expect(declared, 'ring step uses asin()').not.toMatch(/asin\(/);
+    expect(declared, 'ring step divides by a length').not.toMatch(/\)\s*\/\s*var\(--radius\)/);
+
+    // A bare number, converted to an angle once.
+    expect(field).toMatch(/--step-deg:\s*[\d.]+/);
+    expect(field).toMatch(/--step:\s*calc\(var\(--step-deg\)\s*\*\s*1deg\)/);
+
+    // Each declared step has to match what ringStep computes for that tile size,
+    // or the band quietly overlaps or gaps at that breakpoint.
+    const steps = [
+      ...gridCss.matchAll(
+        /--tile:\s*(\d+)px;[\s\S]*?--gap:\s*(\d+)px;[\s\S]*?--step-deg:\s*([\d.]+)/g,
+      ),
+    ];
+
+    expect(steps.length, 'no ring geometry blocks found').toBeGreaterThanOrEqual(1);
+
+    for (const [, tile, gap, step] of steps) {
+      const expected = ringStep(Number(tile), Number(gap));
+      expect(Number(step), `step at ${tile}px tiles`).toBeCloseTo(expected, 1);
+    }
+  });
+
+  it('re-derives the ring step when the tiles shrink at a breakpoint', () => {
+    // The angle is slot * step, and step is inherited from the field, so a
+    // smaller tile needs only its own --tile and --gap. An inline per-tile step
+    // would outrank the media query and leave the phone band full of gaps.
+    const phone =
+      gridCss.match(/@media \(max-width: 40rem\)\s*\{[\s\S]*?\.grid__field\s*\{([^}]*)\}/)?.[1] ??
+      '';
+
+    expect(phone, 'phone breakpoint does not resize the ring').toMatch(/--tile:\s*\d+px/);
+    expect(phone, 'phone breakpoint does not resize the gap').toMatch(/--gap:\s*\d+px/);
+
+    // The field must not set a width or height the tiles inherit, or the smaller
+    // tile would sit in the desktop-sized box.
+    const fieldBlock = gridCss.match(/\.grid__field\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(fieldBlock).toMatch(/height:\s*var\(--tile\)/);
+    expect(fieldBlock).not.toMatch(/height:\s*\d+px/);
+  });
+
+  it('keeps perspective outside the ring so near tiles do not balloon', () => {
+    // Perspective divides by (distance - z). If that distance is close to the
+    // radius the closest tile scales without limit and the band looks like a
+    // fish-eye, so it has to sit comfortably beyond it.
+    expect(cylinder.perspective).toBeGreaterThan(cylinder.radius * 1.4);
+    expect(gridCss).toMatch(/perspective:\s*\d+px/);
+
+    // The two have to agree or the CSS silently uses its own value.
+    const declared = Number(gridCss.match(/perspective:\s*(\d+)px/)?.[1] ?? '0');
+    expect(declared).toBe(cylinder.perspective);
+  });
+
+  it('turns slowly enough to read as a drift rather than a timer', () => {
+    expect(spin.autoPeriod).toBeGreaterThan(60);
   });
 
   it('fetches every photo up front, because lazy tiles never load off frame', () => {
@@ -236,15 +342,12 @@ describe('photo grid', () => {
     }
   });
 
-  it('keeps the tile depth small enough to stay inside its clipping box', () => {
-    // Perspective scales a tile by P / (P - depth); too much depth pushes tiles
-    // past the viewport and overflow: hidden eats the middle of the grid.
-    const depth = Number(
-      gridCss.match(/--depth:[\s\S]{0,120}?\*\s*(\d+(?:\.\d+)?)px/)?.[1] ?? '999',
-    );
-    const perspective = Number(gridCss.match(/perspective:\s*(\d+)px/)?.[1] ?? '1');
-
-    expect(depth).toBeLessThan(perspective * 0.2);
+  it('keeps the ring inside its own clipping box', () => {
+    // Tiles sit at -radius along Z, so perspective divides by
+    // (distance - radius). That has to stay comfortably positive or the near side
+    // of the ring projects past the viewport and overflow: hidden eats the band.
+    const nearest = cylinder.perspective - cylinder.radius;
+    expect(nearest).toBeGreaterThan(cylinder.radius * 0.4);
   });
 
   it('darkens the scrim enough for overlaid type', () => {
