@@ -37,14 +37,15 @@ export const experience: Experience[] = [
     company: 'Theory Ventures',
     location: 'San Francisco, CA',
     role: 'AI Engineer Intern',
-    focus: 'agent infrastructure, due diligence pipelines',
+    focus: 'async agent tasks, autonomous research',
     tech: ['Python', 'FastAPI', 'PostgreSQL', 'GCP', 'FastMCP'],
     startDate: 'May 2026',
     endDate: 'Aug 2026',
     highlights: [
-      'Rebuilt the deal scan pipeline from JSON files into SQL over 107k+ entities, taking a full run from 9.5 minutes to under 30 seconds.',
-      'Built the notification service on FastAPI and FastMCP, running on Cloud Run and dispatching investor research tasks into isolated sandboxes.',
-      'Assembled eval sets from real investor workflows and used them to compare open models on the same tasks.',
+      'Architected a notifications system using FastAPI, PostgreSQL, and FastMCP on Cloud Run, routing scheduled workflows to investors while executing background due diligence to autonomously surface companies and founders.',
+      'Deployed isolated agent sandboxes to securely dispatch automated research tasks to interactive Google Chat cards.',
+      'Instrumented eval sets using investor workflows to benchmark open models, refine tool descriptions, and optimize skills.',
+      'Re-architected JSON pipelines to SQL for 107k+ entities, slashing deal scan runtimes from 9.5 minutes to under 30 seconds.',
     ],
   },
   {
@@ -113,7 +114,12 @@ export const projects: Project[] = [
     tech: ['Python', 'TensorFlow', 'Transformers'],
     description:
       'Multimodal pipeline that turns UI screenshots into HTML and CSS. Wrote the vision-to-code model and presented the comparative results at the Canadian Undergraduate Conference on AI.',
-    links: [{ label: 'github', href: 'https://github.com/Reeto29' }],
+    links: [
+      {
+        label: 'paper',
+        href: 'https://drive.google.com/file/d/1aSMlfpieOhFJwanJBxsmo3vzqLbcT-Ge/view',
+      },
+    ],
   },
 ];
 
