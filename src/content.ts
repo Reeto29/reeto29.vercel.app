@@ -5,9 +5,9 @@ import type { Education, Experience, Project, SkillGroup, SocialLink } from './t
  * link can never point at a section that does not exist.
  */
 export const SECTION_IDS = [
+  'records',
   'work',
   'projects',
-  'records',
   'skills',
   'education',
   'contact',

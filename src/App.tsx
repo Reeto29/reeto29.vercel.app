@@ -45,9 +45,9 @@ export default function App() {
 
       <div className="shell">
         <main id="main" tabIndex={-1}>
+          <RecordShelf />
           <Work />
           <Projects />
-          <RecordShelf />
           <Skills />
           <Education />
           <Contact />
