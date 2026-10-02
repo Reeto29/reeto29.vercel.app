@@ -7,6 +7,10 @@ import type { Album } from './types';
  * Internet Archive Cover Art Archive (or the iTunes artwork CDN where
  * MusicBrainz has no release) at 500 to 600px. Replace a file and keep the
  * filename to swap the art without touching code.
+ *
+ * Years are the original release, not whatever edition the artwork came from:
+ * MusicBrainz files 4 Your Eyez Only under a 2016 reissue, and the deluxe and
+ * expanded editions of several others carry their own dates.
  */
 export const albums: Album[] = [
   {
@@ -85,6 +89,48 @@ export const albums: Album[] = [
     artist: 'Steve Lacy',
     year: 2020,
     cover: '/albums/the-lo-fis.jpg',
+  },
+  {
+    slug: 'forest-hills-drive',
+    title: '2014 Forest Hills Drive',
+    artist: 'J. Cole',
+    year: 2014,
+    cover: '/albums/forest-hills-drive.jpg',
+  },
+  {
+    slug: '4-your-eyez-only',
+    title: '4 Your Eyez Only',
+    artist: 'J. Cole',
+    year: 2013,
+    cover: '/albums/4-your-eyez-only.jpg',
+  },
+  {
+    slug: 'damn',
+    title: 'DAMN.',
+    artist: 'Kendrick Lamar',
+    year: 2017,
+    cover: '/albums/damn.jpg',
+  },
+  {
+    slug: 'take-care',
+    title: 'Take Care',
+    artist: 'Drake',
+    year: 2011,
+    cover: '/albums/take-care.jpg',
+  },
+  {
+    slug: 'tpab',
+    title: 'To Pimp a Butterfly',
+    artist: 'Kendrick Lamar',
+    year: 2015,
+    cover: '/albums/tpab.jpg',
+  },
+  {
+    slug: 'mirage',
+    title: 'Mirage',
+    artist: 'Avenoir',
+    year: 2025,
+    cover: '/albums/mirage.jpg',
   },
 ];
 
