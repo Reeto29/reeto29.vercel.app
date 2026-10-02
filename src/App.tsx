@@ -2,6 +2,7 @@ import { profile, socials } from './content';
 import { useHashScroll } from './hooks/useHashScroll';
 import { PhotoGrid } from './components/PhotoGrid';
 import { Work } from './components/Work';
+import { RecordShelf } from './components/RecordShelf';
 import { Education, Projects, Skills } from './components/Sections';
 import { Contact } from './components/Contact';
 
@@ -44,6 +45,7 @@ export default function App() {
         <main id="main" tabIndex={-1}>
           <Work />
           <Projects />
+          <RecordShelf />
           <Skills />
           <Education />
           <Contact />

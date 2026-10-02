@@ -1,0 +1,247 @@
+/*
+  The queue reads as a row of six sleeves with the playing record pulled forward,
+  so slot 0 is larger than the five behind it.
+
+  The now-playing metadata sits below the whole row rather than inside the first
+  slot. Inside it, the lead slot is taller than the rest, and on a phone that
+  extra height shunts the remaining sleeves into a ragged second row.
+*/
+.deck {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  --slot: 4.5rem;
+  --slot-lead: 7.5rem;
+}
+
+.deck__slot {
+  position: relative;
+  width: var(--slot);
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.deck__slot:first-child {
+  width: var(--slot-lead);
+}
+
+/*
+  Empty slots stay visible so the queue reads as having a fixed capacity of six.
+  A dashed outline says "nothing here yet" without adding a second colour.
+*/
+.deck__empty {
+  display: block;
+  aspect-ratio: 1;
+  border: 1px dashed var(--hairline);
+  border-radius: 2px;
+}
+
+.deck__sleeve {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--bg);
+  box-shadow: 0 0 0 1px var(--hairline);
+}
+
+/* The playing sleeve keeps a hairline of the accent so it reads as active. */
+.deck__sleeve--playing {
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.deck__cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/*
+  A record being lifted off the shelf or dropped onto one is represented by the
+  overlay travelling instead, so the real element steps out of the way for the
+  duration. Hiding rather than unmounting keeps the layout from reflowing
+  mid-flight, which would move the destination out from under the animation.
+*/
+[data-flying='true'] {
+  visibility: hidden;
+}
+
+.deck__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.625rem;
+  margin-top: 0.75rem;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.deck__now {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--label-track);
+}
+
+.deck__title {
+  color: var(--t-primary);
+  font-weight: 500;
+}
+
+.deck__artist {
+  color: var(--t-label);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+  The shelf. Records seen edge-on: narrow vertical bars, each tinted with a colour
+  sampled from its own artwork so eleven of them read as eleven different records
+  rather than one repeated pattern.
+
+  Width is fixed rather than flexible. Letting the spines stretch to fill the
+  column turns them back into thumbnails and loses the shelf silhouette; at a
+  fixed width the row keeps its proportions and the empty shelf to the right reads
+  as the rest of the collection.
+
+  --spine-h is set by the longest title: spine text is a single vertical line, so
+  a title that does not fit gets clipped mid-word, and the worst offender here is
+  "Not All Heroes Wear Capes" at 23 characters.
+*/
+.shelf {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.1875rem;
+  margin-top: 2.5rem;
+  padding: 0 2px 0.5rem;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.shelf__slot {
+  display: flex;
+  align-items: flex-end;
+  flex: 0 0 auto;
+}
+
+.shelf__spine {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.875rem;
+  /* Vary the height per slot so the shelf reads as hand-shelved. */
+  height: calc(14rem - var(--jitter, 0px));
+  padding: 0.375rem 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 2px 2px 0 0;
+  background: var(--spine);
+  color: var(--t-full);
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    filter 0.15s ease;
+}
+
+.shelf__spine:hover,
+.shelf__spine:focus-visible {
+  transform: translateY(-4px);
+  filter: brightness(1.18);
+}
+
+/*
+  Spine titles run vertically, as they do on a real record, written bottom-to-top
+  so the spine reads upright. The size is what lets the longest title clear the
+  spine height with room to spare; a test asserts that against the measured
+  layout rather than trusting the arithmetic here.
+*/
+.shelf__title {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  opacity: 0.82;
+}
+
+.records__intro {
+  margin-bottom: 1.75rem;
+  max-width: 34em;
+  color: var(--t-meta);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.records__foot {
+  margin-top: 0.75rem;
+  color: var(--t-label);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+  Flight layer. Fixed and full-viewport so a record can cross from the shelf up
+  into the queue regardless of scroll position; the images inside are absolutely
+  positioned by the rAF loop via transform, width, and height.
+*/
+.records__flights {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.records__flight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 2px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px var(--hairline);
+  will-change: transform, width, height;
+}
+
+@media (max-width: 40rem) {
+  /*
+    Six sleeves in a row will not fit a phone. A three-column grid keeps every
+    cover the same size and the rows even; flex-wrap would leave the enlarged
+    lead slot straddling a row break. The lead slot drops to the same size here,
+    so the accent ring alone marks what is playing.
+  */
+  .deck {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .deck__slot,
+  .deck__slot:first-child {
+    width: auto;
+  }
+
+  /* Shorter shelf on a phone, with the title scaled to match. */
+  .shelf__spine {
+    height: calc(9.5rem - var(--jitter, 0px));
+  }
+
+  .shelf__title {
+    font-size: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* No hover lift either: the shelf stays a static rack. */
+  .shelf__spine:hover,
+  .shelf__spine:focus-visible {
+    transform: none;
+    filter: brightness(1.1);
+  }
+}

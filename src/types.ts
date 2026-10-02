@@ -37,3 +37,15 @@ export type SocialLink = {
   href: string;
   icon: 'github' | 'linkedin' | 'email';
 };
+
+export type Album = {
+  /** Stable id, also the cover filename under `public/albums/`. */
+  slug: string;
+  title: string;
+  artist: string;
+  year: number;
+  /** Path to the front cover in `public/albums/`. */
+  cover: string;
+  /** Artwork-derived colour for the shelf spine, as `#rrggbb`. */
+  spine: string;
+};

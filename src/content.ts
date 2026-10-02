@@ -4,7 +4,14 @@ import type { Education, Experience, Project, SkillGroup, SocialLink } from './t
  * Section ids in page order. `SectionList` and the nav are derived from this so a
  * link can never point at a section that does not exist.
  */
-export const SECTION_IDS = ['work', 'projects', 'skills', 'education', 'contact'] as const;
+export const SECTION_IDS = [
+  'work',
+  'projects',
+  'records',
+  'skills',
+  'education',
+  'contact',
+] as const;
 
 export type SectionId = (typeof SECTION_IDS)[number];
 
