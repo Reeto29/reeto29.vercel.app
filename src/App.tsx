@@ -1,5 +1,6 @@
 import { profile, socials } from './content';
 import { useHashScroll } from './hooks/useHashScroll';
+import { useScrollReveal } from './hooks/useScrollReveal';
 import { PhotoGrid } from './components/PhotoGrid';
 import { Work } from './components/Work';
 import { RecordShelf } from './components/RecordShelf';
@@ -8,6 +9,7 @@ import { Contact } from './components/Contact';
 
 export default function App() {
   useHashScroll();
+  useScrollReveal();
 
   return (
     <>

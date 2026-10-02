@@ -20,7 +20,7 @@
 
 .masthead__name {
   font-family: var(--font-serif);
-  font-size: clamp(2.25rem, 6vw, 3.25rem);
+  font-size: clamp(2.25rem, 6.5vw, 3.75rem);
   font-weight: 500;
   line-height: 1;
   letter-spacing: -0.015em;
@@ -61,12 +61,14 @@
 }
 
 .masthead__summary {
-  /* Caps the measure to roughly 70 characters rather than letting it run the
-     full 992px column. */
+  /* Kept in DM Sans rather than the serif used for the name: at this size the
+     italic display cut is noticeably harder to read, and this is the line a
+     visitor actually skims. Slightly larger and brighter than body copy so it
+     still reads as an intro note. */
   max-width: 34em;
   margin-top: 1.25rem;
-  color: var(--t-meta);
-  font-size: 15px;
+  color: var(--t-secondary);
+  font-size: 16px;
   line-height: 1.6;
 }
 
