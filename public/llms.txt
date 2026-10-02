@@ -1,0 +1,75 @@
+# Reeto Ghosh
+
+> Software engineer. Final-year University of Waterloo student (B.Math, Honors, Statistics & Computational Mathematics), graduating April 2027. Looking for full-time software engineering roles. Based in Waterloo, ON.
+
+## About
+
+I build data and backend systems, with a focus on Python, SQL, and cloud infrastructure. Recent work spans autonomous agent pipelines, production data platforms at scale, and applied machine learning. I care about systems that are measured, observable, and fast.
+
+Contact: [reeto.ghosh@uwaterloo.ca](mailto:reeto.ghosh@uwaterloo.ca) · [GitHub](https://github.com/Reeto29) · [LinkedIn](https://www.linkedin.com/in/reetoghosh/)
+
+## Experience
+
+### [Theory Ventures](https://theoryvc.com/) — AI Engineer Intern
+San Francisco, CA · May 2026 – Aug 2026 · Focus: async agent tasks, autonomous research
+Stack: Python, FastAPI, PostgreSQL, GCP, FastMCP
+- Architected a notifications system using FastAPI, PostgreSQL, and FastMCP on Cloud Run, routing scheduled workflows to investors while executing background due diligence to autonomously surface companies and founders.
+- Deployed isolated agent sandboxes to securely dispatch automated research tasks to interactive Google Chat cards.
+- Instrumented eval sets using investor workflows to benchmark open models, refine tool descriptions, and optimize skills.
+- Re-architected JSON pipelines to SQL for 107k+ entities, slashing deal scan runtimes from 9.5 minutes to under 30 seconds.
+
+### [Wealthsimple](https://www.wealthsimple.com/en-ca) — Software Engineer Intern
+Toronto, ON · Jan 2026 – Apr 2026 · Focus: product analytics, data quality
+Stack: Python, SQL, dbt, Airflow, Preset
+- Shipped dbt models that merged mobile event data into 169k+ records, and adoption of the resulting metrics doubled.
+- Hardened Airflow DAGs against bad upstream data; the geocoding job now processes 4,100+ addresses at a 99.7% match rate.
+- Rewrote SQL models to stitch together legacy sources, recovering 18+ months of dropped metrics and 40k monthly sessions.
+- Reconciled ML enrichments across 117M+ transactions and surfaced a 1.3M record coverage gap.
+
+### [Toronto Stock Exchange](https://www.tsx.com/) — Software Engineer Intern
+Toronto, ON · May 2025 – Aug 2025 · Focus: market surveillance, query cost
+Stack: Python, SQL, Presto, Hive, Apache Spark
+- Put a trader classification model into production scoring 50k+ participants a day, which improved anomaly detection by 15%.
+- Maintained Python and SQL pipelines on Presto carrying 5TB+ of daily trading data.
+- Moved 500+ recurring analytical queries to Athena, cutting p95 latency 70% and compute spend 20%.
+
+### [Bank of Canada](https://www.bankofcanada.ca/) — Software Engineer Intern
+Ottawa, ON · Sep 2024 – Dec 2024 · Focus: commodities pipelines, applied NLP
+Stack: Python, PyTorch, Databricks, Azure Data Factory
+- Standardized 10M+ daily commodities records through Databricks and PySpark, registered in Unity Catalog.
+- Ran a fine-tuned BERT classifier over 100k+ news articles to score sentiment daily.
+- Fitted ARIMA and GAM models to macroeconomic series for a co-authored GDP estimation paper.
+
+### [École de Technologie Supérieure](https://www.etsmtl.ca/) — Research Intern
+Montreal, QC · Jan 2024 – Apr 2024 · Focus: high-performance computing, Bayesian optimization
+Stack: C, Python, SimGrid, ytopt
+- Conducted NSERC-funded research in high-performance computing, using SimGrid and Bayesian optimization to tune large-scale simulations.
+- Implemented compiler optimization techniques in C, achieving a 10% reduction in overall simulation runtime.
+- Validated Bayesian-optimized simulations against baselines by analyzing Pearson correlation and Euclidean distance.
+
+### [Ciena](https://www.ciena.com/) — Software Engineer Intern
+Ottawa, ON · May 2023 – Aug 2023 · Focus: log triage, internal tooling
+Stack: Python, SQL
+- Built a keyword-detection pipeline over 5GB+ of daily logs that files JIRA issues automatically.
+- Shipped an OpenSearch dashboard for error triage that 70+ engineers use.
+- Designed a Flask + PostgreSQL service for test results, saving the team 200+ hours a year.
+
+## Projects
+
+### Code from Captures (CUCAI)
+Multimodal pipeline that turns UI screenshots into HTML and CSS. Wrote the vision-to-code model and presented the comparative results at the Canadian Undergraduate Conference on AI. Stack: Python, TensorFlow, Transformers.
+Paper: [Google Drive](https://drive.google.com/file/d/1aSMlfpieOhFJwanJBxsmo3vzqLbcT-Ge/view)
+
+## Education
+
+### University of Waterloo — B.Math (Honors), Statistics & Computational Mathematics
+Waterloo, ON · Sep 2022 – Apr 2027
+Relevant coursework: Statistical Classification, Machine Learning in Economics, Computational Statistics & Data Analysis, Linear Models, Stochastic Processes, Data Structures & Algorithms.
+
+## Skills
+
+- **Languages:** Python, SQL, TypeScript, JavaScript, C, Bash, Racket
+- **Frameworks:** FastAPI, Pydantic, SQLAlchemy, Alembic, Docker, FastMCP, ASGI / Uvicorn, REST APIs, JSONB
+- **Cloud:** GCP (Cloud Run, Cloud Run Jobs, Cloud Scheduler, Cloud SQL), Secret Manager, Workload Identity Federation, PostgreSQL
+- **Data & ML:** dbt, Airflow, Databricks, PySpark, Redshift, Presto, PyTorch, Transformers, scikit-learn, MotherDuck
+- **Agents & tooling:** Sail SDK (Sailboxes), OpenCode, ContextVars, W3C Tracing, OAuth / OIDC, HMAC, pytest, uv, Ruff
