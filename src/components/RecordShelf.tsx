@@ -207,7 +207,7 @@ export function RecordShelf() {
 
       <div className="section__body">
         <p className="records__intro">
-          i really like listening to rnb. these are some of my favorite albums.
+          i listen to a lot of music. these are some of my favorite albums.
         </p>
 
         {/* Only shown once a record has been pulled up: there is no idle state to
