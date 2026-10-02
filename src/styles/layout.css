@@ -52,6 +52,16 @@
   gap: 0.75rem;
 }
 
+/*
+  A grid item defaults to min-width: auto, which makes it size to its content's
+  min-content width. The record shelf is wider than a phone, so without this the
+  whole column was pushed out to the shelf's width and the page gained 430px of
+  horizontal scroll.
+*/
+.section__body {
+  min-width: 0;
+}
+
 @media (min-width: 60rem) {
   .section {
     grid-template-columns: var(--rail) minmax(0, 1fr);
@@ -62,10 +72,6 @@
     position: sticky;
     top: 2rem;
     align-self: start;
-  }
-
-  .section__body {
-    min-width: 0;
   }
 }
 
