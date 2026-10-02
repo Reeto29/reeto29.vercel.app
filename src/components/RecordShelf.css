@@ -1,83 +1,243 @@
 /*
-  The queue reads as a row of six sleeves with the playing record pulled forward,
-  so slot 0 is larger than the five behind it.
-
-  The now-playing metadata sits below the whole row rather than inside the first
-  slot. Inside it, the lead slot is taller than the rest, and on a phone that
-  extra height shunts the remaining sleeves into a ragged second row.
+  Two display rails above a shelf.
 */
-.deck {
+.rails {
   display: flex;
-  align-items: flex-start;
-  gap: 0.625rem;
-  --slot: 4.5rem;
-  --slot-lead: 7.5rem;
+  flex-direction: column;
+  gap: 1.75rem;
+  margin-bottom: 3rem;
 }
 
-.deck__slot {
-  position: relative;
-  width: var(--slot);
-  flex: 0 0 auto;
+.rails__row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  list-style: none;
+  padding: 0;
+}
+
+.rails__slot {
+  display: flex;
+  justify-content: flex-start;
   min-width: 0;
 }
 
-.deck__slot:first-child {
-  width: var(--slot-lead);
+/* The rail itself: a hairline the sleeves stand on. */
+.rails__row {
+  position: relative;
+  padding-bottom: 0.75rem;
 }
 
-/*
-  Empty slots stay visible so the queue reads as having a fixed capacity of six.
-  A dashed outline says "nothing here yet" without adding a second colour.
-*/
-.deck__empty {
+.rails__row::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  background: var(--border-strong);
+  box-shadow: 0 5px 12px -5px rgb(0 0 0 / 85%);
+}
+
+/* An empty slot stays visible so the rails read as having capacity. */
+.rails__empty {
   display: block;
+  width: 100%;
+  max-width: 9rem;
   aspect-ratio: 1;
   border: 1px dashed var(--hairline);
   border-radius: 2px;
 }
 
-.deck__sleeve {
+/* Sleeves on a rail stand face out, square to the reader. */
+.shelf__sleeve {
   position: relative;
+  display: block;
+  width: 100%;
+  max-width: 9rem;
   aspect-ratio: 1;
+  padding: 0;
   overflow: hidden;
+  border: 0;
   border-radius: 2px;
-  background: var(--bg);
-  box-shadow: 0 0 0 1px var(--hairline);
+  background: var(--bg-subtle);
+  cursor: pointer;
+  transition:
+    transform 0.22s cubic-bezier(0.34, 1.2, 0.5, 1),
+    box-shadow 0.22s ease;
 }
 
-/* The playing sleeve keeps a hairline of the accent so it reads as active. */
-.deck__sleeve--playing {
-  box-shadow: 0 0 0 1px var(--accent);
+.shelf__sleeve--rail:hover,
+.shelf__sleeve--rail:focus-visible {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 22px -10px rgb(0 0 0 / 85%);
 }
 
-.deck__cover {
+.shelf__sleeve--rail[data-playing='true'] {
+  transform: translateY(-8px);
+  box-shadow:
+    0 12px 22px -10px rgb(0 0 0 / 85%),
+    0 0 0 1px var(--accent);
+}
+
+.shelf__cover {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  /* A hint of shading down the left edge so a sleeve has thickness. */
+  box-shadow: inset 3px 0 6px -3px rgb(0 0 0 / 55%);
+}
+
+/* The caption on a rail sleeve, which keeps a record identifiable face out. */
+.shelf__spine-label {
+  display: block;
+  margin-top: 0.5rem;
+  overflow: hidden;
+  color: var(--t-label);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: var(--label-track);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* On a rail the caption sits inside the square, not under it. */
+.shelf__sleeve--rail .shelf__spine-label {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  margin: 0;
+  padding: 1.5rem 0.5rem 0.4rem;
+  background: linear-gradient(to top, rgb(8 9 12 / 88%), rgb(8 9 12 / 0%));
+  color: var(--t-full);
+  font-size: 9px;
 }
 
 /*
-  A record being lifted off the shelf or dropped onto one is represented by the
-  overlay travelling instead, so the real element steps out of the way for the
-  duration. Hiding rather than unmounting keeps the layout from reflowing
-  mid-flight, which would move the destination out from under the animation.
+  The crate is the shelf, drawn as one thin line the records stand on.
+
+  Records are filed face out and stacked the way records sit in a crate of LPs:
+  every sleeve overlaps the one in front of it, so only a strip of each cover
+  shows and the stack reads as full however many records are in it. The overlap
+  is a negative margin on each slot, and the stacking order is a per-sleeve
+  z-index taken from the slot index, so the front sleeve is always on top.
+
+  A record going up to a rail simply leaves the stack and the ones behind close
+  up. There are no fixed slots to leave a gap in, which is what let this stay
+  flat: the shelf is the same length whatever is filed on it.
+
+  --sleeve is the full width of a sleeve, --reveal how much of each one still
+  shows beyond the sleeve in front of it.
 */
-[data-flying='true'] {
-  visibility: hidden;
+.crate {
+  --sleeve: 7.5rem;
+  --reveal: 2.5rem;
+
+  position: relative;
+  /* A local stacking context, so sleeves rank against each other instead of
+     lifting themselves out of the section and over the page. */
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  margin: 0;
+  padding: 0 0.5rem;
+  list-style: none;
+  /* The shelf. One thin line in the same grey as the rails, lit along the top
+     edge like a board seen from slightly above, and in shadow underneath so the
+     records sit on something. */
+  border-bottom: 2px solid var(--border-strong);
+  box-shadow:
+    inset 0 2px 0 rgb(255 255 255 / 5%),
+    0 6px 14px -8px rgb(0 0 0 / 75%);
+  /* Scrolls rather than pushing the column wide: eleven records do not fit a
+     phone, and an overflowing shelf broke the page layout before. */
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-.deck__meta {
+.crate::-webkit-scrollbar {
+  display: none;
+}
+
+.crate__slot {
+  display: flex;
+  align-items: flex-end;
+  flex: 0 0 auto;
+  /* Pulled left by the width it is tucked behind, leaving --reveal showing. */
+  margin-left: calc(var(--reveal) - var(--sleeve));
+}
+
+.crate__slot:first-child {
+  margin-left: 0;
+}
+
+/*
+  A sleeve in the stack: face out, square to the reader, bottom edge resting on
+  the shelf line. No caption here, because a cover is its own label and the
+  aria-label carries the title for anyone not reading the art.
+*/
+.shelf__sleeve--crate {
+  position: relative;
+  z-index: var(--z, 0);
+  width: var(--sleeve);
+  aspect-ratio: 1;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 1px 1px 0 0;
+  background: var(--bg-subtle);
+  cursor: pointer;
+  /* Hinged at the shelf, so the peek tips a record rather than sliding a tile. */
+  transform-origin: 0 100%;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.shelf__sleeve--crate .shelf__cover {
+  box-shadow: -3px 0 7px -3px rgb(0 0 0 / 65%);
+}
+
+/*
+  Peek. A sleeve that is filed behind its neighbour is pulled out toward the
+  reader and tipped, clearing roughly the width it was tucked behind so the cover
+  comes into view. It is lifted above the rest of the stack while it is out, and
+  the ones it passes are pushed aside, so an album is identifiable without first
+  putting it on a rail.
+
+  The furthest record in the stack peeks out over the end of the shelf rather than
+  off the side of it, so the pull always reads as coming from the crate.
+*/
+.shelf__sleeve--crate:hover,
+.shelf__sleeve--crate:focus-visible {
+  z-index: calc(var(--z, 0) + 100);
+  transform: translateX(60%) rotate(-3deg);
+  box-shadow: -6px 10px 20px -8px rgb(0 0 0 / 85%);
+}
+
+.records__intro {
+  margin-bottom: 0.875rem;
+  max-width: 34em;
+  color: var(--t-meta);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.records__meta {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.25rem 0.625rem;
-  margin-top: 0.75rem;
-  font-size: 13px;
+  margin: 0 0 1.75rem;
+  font-size: 14px;
   line-height: 1.5;
 }
 
-.deck__now {
-  color: var(--accent);
+.records__now {
+  color: var(--t-label);
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 500;
@@ -85,12 +245,12 @@
   letter-spacing: var(--label-track);
 }
 
-.deck__title {
+.records__title {
   color: var(--t-primary);
   font-weight: 500;
 }
 
-.deck__artist {
+.records__artist {
   color: var(--t-label);
   font-family: var(--font-mono);
   font-size: 11px;
@@ -98,99 +258,19 @@
 }
 
 /*
-  The shelf. Records seen edge-on: narrow vertical bars, each tinted with a colour
-  sampled from its own artwork so eleven of them read as eleven different records
-  rather than one repeated pattern.
-
-  Width is fixed rather than flexible. Letting the spines stretch to fill the
-  column turns them back into thumbnails and loses the shelf silhouette; at a
-  fixed width the row keeps its proportions and the empty shelf to the right reads
-  as the rest of the collection.
-
-  --spine-h is set by the longest title: spine text is a single vertical line, so
-  a title that does not fit gets clipped mid-word, and the worst offender here is
-  "Not All Heroes Wear Capes" at 23 characters.
+  A record in flight is represented by the overlay travelling instead, so the real
+  element steps out of the way for the duration. Hiding rather than unmounting
+  keeps the crate and rails from reflowing mid-flight, which would move the
+  destination out from under the animation.
 */
-.shelf {
-  display: flex;
-  align-items: flex-end;
-  gap: 0.1875rem;
-  margin-top: 2.5rem;
-  padding: 0 2px 0.5rem;
-  border-bottom: 1px solid var(--hairline);
-}
-
-.shelf__slot {
-  display: flex;
-  align-items: flex-end;
-  flex: 0 0 auto;
-}
-
-.shelf__spine {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.875rem;
-  /* Vary the height per slot so the shelf reads as hand-shelved. */
-  height: calc(14rem - var(--jitter, 0px));
-  padding: 0.375rem 0;
-  overflow: hidden;
-  border: 0;
-  border-radius: 2px 2px 0 0;
-  background: var(--spine);
-  color: var(--t-full);
-  cursor: pointer;
-  transition:
-    transform 0.15s ease,
-    filter 0.15s ease;
-}
-
-.shelf__spine:hover,
-.shelf__spine:focus-visible {
-  transform: translateY(-4px);
-  filter: brightness(1.18);
+[data-flying='true'] {
+  visibility: hidden;
 }
 
 /*
-  Spine titles run vertically, as they do on a real record, written bottom-to-top
-  so the spine reads upright. The size is what lets the longest title clear the
-  spine height with room to spare; a test asserts that against the measured
-  layout rather than trusting the arithmetic here.
-*/
-.shelf__title {
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  line-height: 1;
-  text-transform: uppercase;
-  white-space: nowrap;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  opacity: 0.82;
-}
-
-.records__intro {
-  margin-bottom: 1.75rem;
-  max-width: 34em;
-  color: var(--t-meta);
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.records__foot {
-  margin-top: 0.75rem;
-  color: var(--t-label);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-}
-
-/*
-  Flight layer. Fixed and full-viewport so a record can cross from the shelf up
-  into the queue regardless of scroll position; the images inside are absolutely
-  positioned by the rAF loop via transform, width, and height.
+  Flight layer. Fixed and full-viewport so a record can cross from the crate up to
+  a rail regardless of scroll position; the images inside are absolutely
+  positioned by the rAF loop via transform.
 */
 .records__flights {
   position: fixed;
@@ -203,45 +283,44 @@
   position: absolute;
   top: 0;
   left: 0;
-  border-radius: 2px;
   object-fit: cover;
-  box-shadow: 0 0 0 1px var(--hairline);
-  will-change: transform, width, height;
+  border-radius: 2px;
+  box-shadow: 0 18px 34px -14px rgb(0 0 0 / 90%);
+  will-change: transform, opacity;
 }
 
+/*
+  The crate keeps fixed-size sleeves at every width rather than dividing its own
+  width between them: the overlap is what makes it read as a stack, and a slot
+  stretched to fill the shelf would open the records out into a row again.
+*/
 @media (max-width: 40rem) {
-  /*
-    Six sleeves in a row will not fit a phone. A three-column grid keeps every
-    cover the same size and the rows even; flex-wrap would leave the enlarged
-    lead slot straddling a row break. The lead slot drops to the same size here,
-    so the accent ring alone marks what is playing.
-  */
-  .deck {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.5rem;
+  .rails__row {
+    gap: 0.75rem;
   }
 
-  .deck__slot,
-  .deck__slot:first-child {
-    width: auto;
+  .shelf__sleeve {
+    max-width: 6.5rem;
   }
 
-  /* Shorter shelf on a phone, with the title scaled to match. */
-  .shelf__spine {
-    height: calc(9.5rem - var(--jitter, 0px));
-  }
-
-  .shelf__title {
-    font-size: 0.5rem;
+  /* Smaller sleeves and a narrower peek, so the stack still shows a run of
+     records rather than two covers on a phone. */
+  .crate {
+    --sleeve: 5.75rem;
+    --reveal: 1.875rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* No hover lift either: the shelf stays a static rack. */
-  .shelf__spine:hover,
-  .shelf__spine:focus-visible {
+  /*
+    No pull-off and no lift. Hovering a crate sleeve still raises it to the front
+    of the stack so its cover can be read, it just does not slide or tip to do it.
+  */
+  .shelf__sleeve,
+  .shelf__sleeve:hover,
+  .shelf__sleeve:focus-visible,
+  .shelf__sleeve[data-playing='true'] {
     transform: none;
-    filter: brightness(1.1);
+    transition: none;
   }
 }

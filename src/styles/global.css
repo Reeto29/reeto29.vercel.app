@@ -14,6 +14,8 @@
 
   --row-hover: rgb(255 255 255 / 3.5%);
   --hairline: rgb(255 255 255 / 6%);
+  --bg-subtle: rgb(255 255 255 / 4%);
+  --border-strong: rgb(255 255 255 / 14%);
 
   --font-sans: 'DM Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-serif: 'Fraunces', ui-serif, Georgia, serif;

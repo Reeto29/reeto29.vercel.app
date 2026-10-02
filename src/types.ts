@@ -46,6 +46,4 @@ export type Album = {
   year: number;
   /** Path to the front cover in `public/albums/`. */
   cover: string;
-  /** Artwork-derived colour for the shelf spine, as `#rrggbb`. */
-  spine: string;
 };

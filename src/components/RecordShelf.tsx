@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
-import { albums, deck } from '../records';
+import { albums, displayCapacity, shelf } from '../records';
 import type { Album } from '../types';
 import './RecordShelf.css';
 
@@ -7,9 +7,9 @@ type Box = { top: number; left: number; width: number; height: number };
 
 type Flight = {
   id: number;
-  slug: string;
+  album: Album;
   from: Box;
-  /** Measured after the state commits, once the destination exists in the DOM. */
+  /** Measured after the state commits, once the destination slot exists. */
   to: Box | null;
 };
 
@@ -20,95 +20,108 @@ const boxOf = (rect: DOMRect): Box => ({
   height: rect.height,
 });
 
-/** Fast out of the gate, settling into the slot. */
 const easeOut = (t: number) => 1 - (1 - t) ** 3;
 
 /**
- * A shelf of records you can queue from.
+ * Records in a crate, with two display rails above them.
  *
- * The mechanic is a six-slot queue above a shelf of spines. Clicking a spine
- * lifts that record into the front of the queue; once the queue is full, the
- * record at the end of it drops back to the bottom of the shelf.
+ * The crate holds everything, filed spine out. Clicking a record lifts it onto a
+ * rail at the front; once the rails are full the record at the end of the queue
+ * drops back down into the crate. Clicking a record already on a rail makes it
+ * the one playing, and clicking the one playing puts it back in the crate.
  *
- * The flight is one rAF loop writing transforms onto a fixed overlay layer. The
- * state commits immediately so the queue is never wrong about what it holds, and
- * the overlay is purely decorative on top of that: the real shelf and queue
- * elements are hidden for the duration and revealed when the record lands. Under
- * `prefers-reduced-motion` the overlay is skipped and the state change is the
- * whole effect.
+ * The flight is one rAF loop writing transforms to a fixed overlay layer. State
+ * commits immediately, so what is displayed and what is playing are never wrong
+ * while an animation is still running; the overlay is decoration on top of that.
+ * Under reduced motion the overlay is skipped and the state change is the effect.
  */
 export function RecordShelf() {
-  const bySlug = new Map<string, Album>(albums.map((album) => [album.slug, album]));
-
-  const [shelf, setShelf] = useState<string[]>(() =>
-    albums.slice(deck.seed).map((album) => album.slug),
+  const [displayed, setDisplayed] = useState<string[]>(() =>
+    albums.slice(0, displayCapacity).map((album) => album.slug),
   );
-  const [queue, setQueue] = useState<string[]>(() =>
-    albums.slice(0, deck.seed).map((album) => album.slug),
-  );
+  const [playing, setPlaying] = useState<string | undefined>(undefined);
   const [flights, setFlights] = useState<Flight[]>([]);
   const [announcement, setAnnouncement] = useState('');
 
   const layerRef = useRef<HTMLDivElement>(null);
   const flightId = useRef(0);
 
-  const pick = (slug: string, source: HTMLElement) => {
-    const index = shelf.indexOf(slug);
-    if (index < 0) return;
+  const bySlug = new Map(albums.map((album) => [album.slug, album]));
+  const onRails = new Set(displayed);
 
-    const nextShelf = [...shelf];
-    nextShelf.splice(index, 1);
+  const lift = (album: Album, source: HTMLElement) => {
+    // The rails are full: whatever was at the end goes back down to the crate.
+    const dropping = displayed.length >= displayCapacity ? displayed.at(-1) : undefined;
 
-    const nextQueue = [slug, ...queue];
-
-    // The queue is full, so the record at the end of it is the one that leaves.
-    const returned = nextQueue.length > deck.queueSize ? (nextQueue.pop() ?? null) : null;
-    if (returned !== null) nextShelf.push(returned);
-
-    const picked = bySlug.get(slug);
-
-    setShelf(nextShelf);
-    setQueue(nextQueue);
+    const next = [album.slug, ...displayed].slice(0, displayCapacity);
+    setDisplayed(next);
+    setPlaying(album.slug);
     setAnnouncement(
-      [
-        picked && `${picked.title} by ${picked.artist} is playing.`,
-        returned && bySlug.get(returned)?.title,
-        returned && 'went back to the shelf.',
-      ]
-        .filter(Boolean)
-        .join(' '),
+      `${album.title} by ${album.artist} is playing.${
+        dropping === undefined
+          ? ''
+          : ` ${bySlug.get(dropping)?.title ?? ''} went back in the crate.`
+      }`,
     );
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (dropping === undefined) {
+      setFlights([]);
+      return;
+    }
 
-    const started: Flight[] = [
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setFlights([]);
+      return;
+    }
+
+    const outgoing = bySlug.get(dropping);
+    const tail =
+      outgoing === undefined
+        ? null
+        : (document.querySelector<HTMLElement>(`[data-slot="${dropping}"]`) ?? null);
+
+    setFlights([
       {
         id: (flightId.current += 1),
-        slug,
+        album,
         from: boxOf(source.getBoundingClientRect()),
         to: null,
       },
-    ];
+      ...(tail === null || outgoing === undefined
+        ? []
+        : [
+            {
+              id: (flightId.current += 1),
+              album: outgoing,
+              from: boxOf(tail.getBoundingClientRect()),
+              to: null,
+            },
+          ]),
+    ]);
+  };
 
-    if (returned !== null) {
-      const tail = document.querySelector<HTMLElement>(`[data-slot="${returned}"]`);
-      if (tail) {
-        started.push({
-          id: (flightId.current += 1),
-          slug: returned,
-          from: boxOf(tail.getBoundingClientRect()),
-          to: null,
-        });
-      }
+  const select = (album: Album, source: HTMLElement) => {
+    if (!onRails.has(album.slug)) {
+      lift(album, source);
+      return;
     }
 
-    setFlights(started);
+    if (playing === album.slug) {
+      // The one playing goes back in the crate.
+      setDisplayed(displayed.filter((slug) => slug !== album.slug));
+      setPlaying(undefined);
+      setAnnouncement(`${album.title} stopped and went back in the crate.`);
+      setFlights([]);
+      return;
+    }
+
+    setPlaying(album.slug);
+    setAnnouncement(`${album.title} by ${album.artist} is playing.`);
   };
 
   /*
-    Measure the destinations only after React has committed, since the slot a
-    record is flying into does not exist until it does. A destination that
-    measures zero means the element is not laid out (jsdom, or a hidden tree);
+    A destination slot does not exist until React commits, so it can only be
+    measured afterwards. One that measures zero means the tree is not laid out;
     the overlay then fades rather than flies, and the committed state still holds.
   */
   useLayoutEffect(() => {
@@ -116,17 +129,18 @@ export function RecordShelf() {
     if (layer === null || flights.length === 0) return;
 
     const measured = flights.map((flight) => {
-      const dest = document.querySelector<HTMLElement>(`[data-slot="${flight.slug}"]`);
-      const rect = dest?.getBoundingClientRect();
-      const to = rect !== undefined && rect.width > 0 ? boxOf(rect) : null;
-      return { ...flight, to };
+      const rect = document
+        .querySelector<HTMLElement>(`[data-slot="${flight.album.slug}"]`)
+        ?.getBoundingClientRect();
+
+      return { ...flight, to: rect !== undefined && rect.width > 0 ? boxOf(rect) : null };
     });
 
     /*
       The clock is the first frame's own timestamp rather than
-      `performance.now()`. Frame callbacks carry the time the frame was
-      scheduled, which keeps the flight consistent with whatever clock the host
-      is using and avoids a long first frame reading as instant progress.
+      `performance.now()`: frame callbacks carry the time the frame was
+      scheduled, which keeps the flight on the host's clock and stops a long
+      first frame reading as instant progress.
     */
     let startedAt: number | null = null;
     let frame = 0;
@@ -134,7 +148,7 @@ export function RecordShelf() {
     const paint = (now: number) => {
       startedAt ??= now;
 
-      const t = Math.min(1, Math.max(0, (now - startedAt) / deck.flightMs));
+      const t = Math.min(1, Math.max(0, (now - startedAt) / shelf.flightMs));
       const eased = easeOut(t);
 
       for (const flight of measured) {
@@ -146,17 +160,20 @@ export function RecordShelf() {
           continue;
         }
 
-        // Records are lifted, not teleported: rise above the straight line by a
-        // fraction of the distance travelled, capped so a short hop stays small.
+        // Lifted, not teleported: rise above the straight line by a fraction of the
+        // distance, capped so a short hop stays small.
         const rise =
           -Math.sin(Math.PI * eased) *
-          Math.min(48, Math.abs(flight.to.top - flight.from.top) * 0.2);
+          Math.min(72, Math.abs(flight.to.top - flight.from.top) * 0.28);
 
-        node.style.transform = `translate3d(${flight.from.left + (flight.to.left - flight.from.left) * eased}px, ${
+        // Going up into a rail grows the sleeve; coming back down shrinks it.
+        const scale = 1 + (0.08 - 1) * eased;
+
+        node.style.transform = `translate3d(${
+          flight.from.left + (flight.to.left - flight.from.left) * eased
+        }px, ${
           flight.from.top + (flight.to.top - flight.from.top) * eased + rise
-        }px, 0)`;
-        node.style.width = `${flight.from.width + (flight.to.width - flight.from.width) * eased}px`;
-        node.style.height = `${flight.from.height + (flight.to.height - flight.from.height) * eased}px`;
+        }px, 0) scale(${scale})`;
         node.style.opacity = '1';
       }
 
@@ -171,8 +188,16 @@ export function RecordShelf() {
     return () => cancelAnimationFrame(frame);
   }, [flights]);
 
-  const flying = new Set(flights.map((flight) => flight.slug));
-  const playing = queue[0] === undefined ? undefined : bySlug.get(queue[0]);
+  const flying = new Set(flights.map((flight) => flight.album.slug));
+  const nowPlaying = playing === undefined ? undefined : bySlug.get(playing);
+
+  const sleeveProps = (album: Album, kind: 'rail' | 'crate') => ({
+    className: `shelf__sleeve shelf__sleeve--${kind}`,
+    'data-slot': album.slug,
+    'data-flying': flying.has(album.slug) ? 'true' : undefined,
+    'data-playing': playing === album.slug ? 'true' : undefined,
+    'aria-pressed': playing === album.slug,
+  });
 
   return (
     <section className="section" id="records" aria-labelledby="records-heading">
@@ -182,100 +207,111 @@ export function RecordShelf() {
 
       <div className="section__body">
         <p className="records__intro">
-          {albums.length} records on a shelf. click one and it starts playing; the queue holds{' '}
-          {deck.queueSize}, and whatever reaches the end of it goes back on the shelf.
+          i really like listening to rnb. these are some of my favorite albums.
         </p>
 
-        <ol className="deck" aria-label="record queue">
-          {Array.from({ length: deck.queueSize }, (_, index) => {
-            const slug = queue[index];
-            const album = slug === undefined ? undefined : bySlug.get(slug);
-
-            return (
-              <li className="deck__slot" key={slug ?? `empty-${index}`} data-slot={slug}>
-                {album === undefined ? (
-                  <span className="deck__empty" aria-hidden="true" />
-                ) : (
-                  <div
-                    className={index === 0 ? 'deck__sleeve deck__sleeve--playing' : 'deck__sleeve'}
-                    data-flying={flying.has(album.slug) ? 'true' : undefined}
-                  >
-                    <img
-                      className="deck__cover"
-                      src={album.cover}
-                      alt=""
-                      loading={index === 0 ? 'eager' : 'lazy'}
-                      decoding="async"
-                    />
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ol>
-
-        {playing !== undefined && (
-          <p className="deck__meta">
-            <span className="deck__now">now playing</span>
-            <span className="deck__title">{playing.title}</span>
-            <span className="deck__artist">
-              {playing.artist}, {playing.year}
+        {/* Only shown once something is playing: there is no idle state to fill. */}
+        {nowPlaying !== undefined && (
+          <p className="records__meta">
+            <span className="records__now">{flights.length > 0 ? 'loading' : 'now playing'}</span>
+            <span className="records__title">{nowPlaying.title}</span>
+            <span className="records__artist">
+              {nowPlaying.artist}, {nowPlaying.year}
             </span>
           </p>
         )}
 
-        <ul className="shelf" aria-label="records on the shelf">
-          {shelf.map((slug, index) => {
-            const album = bySlug.get(slug);
-            if (album === undefined) return null;
+        {/* Rails: two rows of slots, newest first, so slot 0 is top left. */}
+        <div className="rails">
+          {Array.from({ length: shelf.displayRows }, (_, row) => (
+            <ol className="rails__row" key={row} aria-label={`display rail ${row + 1}`}>
+              {Array.from({ length: shelf.displayCols }, (_, column) => {
+                const slug = displayed[row * shelf.displayCols + column];
+                const album = slug === undefined ? undefined : bySlug.get(slug);
 
-            return (
-              <li
-                className="shelf__slot"
-                key={slug}
-                style={{ '--jitter': `${(index % 4) * (deck.spineJitter / 4)}px` } as CSSProperties}
-              >
+                return (
+                  <li className="rails__slot" key={slug ?? `empty-${row}-${column}`}>
+                    {album === undefined ? (
+                      <span className="rails__empty" aria-hidden="true" />
+                    ) : (
+                      <button
+                        type="button"
+                        {...sleeveProps(album, 'rail')}
+                        aria-label={
+                          playing === album.slug
+                            ? `Stop ${album.title} by ${album.artist} and put it back in the crate`
+                            : `Play ${album.title} by ${album.artist}`
+                        }
+                        onClick={(event) => select(album, event.currentTarget)}
+                      >
+                        <img
+                          className="shelf__cover"
+                          src={album.cover}
+                          alt=""
+                          loading={row === 0 && column < 3 ? 'eager' : 'lazy'}
+                          decoding="async"
+                        />
+                        <span className="shelf__spine-label" aria-hidden="true">
+                          {album.title}
+                        </span>
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          ))}
+        </div>
+
+        {/*
+          The crate is the shelf. Every record not on a rail sits face out and
+          stacked the way records sit in a crate of LPs: each sleeve overlaps the
+          one before it, so only a strip of each cover shows and the stack reads as
+          full no matter how many records are in it. A record going up to a rail
+          just leaves the stack and the ones behind it close up, rather than the row
+          leaving a hole. Hovering a sleeve pulls it out of the stack for a preview.
+        */}
+        <ul className="crate" aria-label="records in the crate">
+          {albums
+            .filter((album) => !onRails.has(album.slug))
+            .map((album, index) => (
+              <li className="crate__slot" key={album.slug}>
                 <button
                   type="button"
-                  className="shelf__spine"
-                  data-slot={slug}
-                  data-flying={flying.has(slug) ? 'true' : undefined}
-                  style={{ '--spine': album.spine } as CSSProperties}
-                  aria-label={`Play ${album.title} by ${album.artist}`}
-                  onClick={(event) => pick(slug, event.currentTarget)}
+                  {...sleeveProps(album, 'crate')}
+                  aria-label={`Put ${album.title} by ${album.artist} on a rail and play it`}
+                  onClick={(event) => lift(album, event.currentTarget)}
+                  // Front sleeve on top: stacking order comes from the slot index.
+                  style={{ '--z': String(albums.length - index) } as CSSProperties}
                 >
-                  <span className="shelf__title" aria-hidden="true">
-                    {album.title}
-                  </span>
+                  <img
+                    className="shelf__cover"
+                    src={album.cover}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </button>
               </li>
-            );
-          })}
+            ))}
         </ul>
 
-        <p className="records__foot">{shelf.length} records on the shelf</p>
-
         <div className="records__flights" ref={layerRef} aria-hidden="true">
-          {flights.map((flight) => {
-            const album = bySlug.get(flight.slug);
-            if (album === undefined) return null;
-
-            return (
-              <img
-                key={flight.id}
-                className="records__flight"
-                data-overlay={flight.id}
-                src={album.cover}
-                alt=""
-                decoding="async"
-                style={{
-                  transform: `translate3d(${flight.from.left}px, ${flight.from.top}px, 0)`,
-                  width: `${flight.from.width}px`,
-                  height: `${flight.from.height}px`,
-                }}
-              />
-            );
-          })}
+          {flights.map((flight) => (
+            <img
+              key={flight.id}
+              className="records__flight"
+              data-overlay={flight.id}
+              src={flight.album.cover}
+              alt=""
+              decoding="async"
+              style={{
+                transform: `translate3d(${flight.from.left}px, ${flight.from.top}px, 0)`,
+                width: `${flight.from.width}px`,
+                height: `${flight.from.height}px`,
+              }}
+            />
+          ))}
         </div>
 
         <p className="visually-hidden" role="status">

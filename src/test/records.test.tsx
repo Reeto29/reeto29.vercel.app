@@ -1,37 +1,41 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { existsSync } from 'node:fs';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RecordShelf } from '../components/RecordShelf';
-import { albums, deck } from '../records';
+import { albums, displayCapacity, shelf } from '../records';
 import { SECTION_IDS } from '../content';
 
 const shelfCss = readFileSync(resolve(process.cwd(), 'src/components/RecordShelf.css'), 'utf8');
 
-/** Slugs currently rendered in the queue, in play order. */
-function queued(container: HTMLElement): string[] {
-  return [...container.querySelectorAll<HTMLElement>('.deck__slot')]
-    .map((slot) => slot.dataset.slot)
-    .filter((slug): slug is string => slug !== undefined);
-}
-
-/** Slugs currently rendered on the shelf, left to right. */
-function onShelf(container: HTMLElement): string[] {
-  return [...container.querySelectorAll<HTMLElement>('.shelf__spine')].map(
-    (spine) => spine.dataset.slot ?? '',
+/** Slugs on the display rails, in slot order. */
+function onRails(container: HTMLElement): string[] {
+  return [...container.querySelectorAll<HTMLElement>('.rails__slot .shelf__sleeve')].map(
+    (sleeve) => sleeve.dataset.slot ?? '',
   );
 }
 
-/** The leftmost shelf button, i.e. the next record a click would pick. */
-function firstShelfButton(container: HTMLElement): HTMLElement {
-  const button = container.querySelector<HTMLElement>('.shelf__spine');
-  if (button === null) throw new Error('no record on the shelf to click');
+/** Slugs filed in the crate, left to right. */
+function inCrate(container: HTMLElement): string[] {
+  return [...container.querySelectorAll<HTMLElement>('.crate__slot .shelf__sleeve')].map(
+    (sleeve) => sleeve.dataset.slot ?? '',
+  );
+}
+
+/** The record button for a slug, wherever it currently sits. */
+function buttonFor(container: HTMLElement, slug: string): HTMLElement {
+  const button = container.querySelector<HTMLElement>(`.shelf__sleeve[data-slot="${slug}"]`);
+  if (button === null) throw new Error(`no record button for ${slug}`);
   return button;
 }
 
-/** jsdom reports zero-sized boxes, so the flight overlay fades rather than flies. */
+/** The album currently described as playing, if any. */
+function nowPlaying(container: HTMLElement): string | null {
+  const title = container.querySelector('.records__title')?.textContent ?? '';
+  return title === '' ? null : title;
+}
+
 function stubEnvironment() {
   frames = [];
 
@@ -63,6 +67,13 @@ function advance(milliseconds: number, step = 16) {
       for (const callback of pending) callback(now);
     }
   });
+}
+
+/** Lets the crate hold at least one record to click. */
+function spareFromCrate(container: HTMLElement): string {
+  const spare = inCrate(container)[0];
+  if (spare === undefined) throw new Error('the crate is empty, nothing to lift');
+  return spare;
 }
 
 beforeEach(() => {
@@ -98,16 +109,13 @@ describe('record data', () => {
     }
   });
 
-  it('gives every album its own spine colour as a hex value', () => {
-    for (const album of albums) {
-      expect(album.spine, `bad spine colour: ${album.slug}`).toMatch(/^#[0-9a-f]{6}$/i);
-    }
+  it('derives the display capacity from the rails rather than hardcoding it', () => {
+    expect(displayCapacity).toBe(shelf.displayRows * shelf.displayCols);
+    expect(displayCapacity).toBeGreaterThan(0);
   });
 
-  it('seeds fewer records than the queue holds, so there is room to queue one', () => {
-    expect(deck.seed).toBeGreaterThan(0);
-    expect(deck.seed).toBeLessThanOrEqual(deck.queueSize);
-    expect(albums.length).toBeGreaterThan(deck.queueSize);
+  it('has at least one record to display and at least one left in the crate', () => {
+    expect(displayCapacity).toBeLessThan(albums.length);
   });
 
   it('keeps the section id in step with the nav', () => {
@@ -116,7 +124,7 @@ describe('record data', () => {
 });
 
 describe('record shelf', () => {
-  it('labels the section and names the queue', () => {
+  it('labels the section and names both shelves', () => {
     const { container } = render(<RecordShelf />);
 
     const section = container.querySelector('section#records');
@@ -124,233 +132,241 @@ describe('record shelf', () => {
     expect(section?.getAttribute('aria-labelledby')).toBe('records-heading');
     expect(document.querySelector('#records-heading')).not.toBeNull();
 
-    expect(screen.getByRole('list', { name: /record queue/i })).toBeInTheDocument();
-    expect(screen.getByRole('list', { name: /records on the shelf/i })).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: /records in the crate/i })).toBeInTheDocument();
   });
 
-  it('renders exactly as many queue slots as the queue holds', () => {
+  it('builds the rails from the configured rows and columns', () => {
     const { container } = render(<RecordShelf />);
 
-    expect(container.querySelectorAll('.deck__slot')).toHaveLength(deck.queueSize);
-  });
+    const rows = [...container.querySelectorAll('.rails__row')];
+    expect(rows.length).toBe(shelf.displayRows);
 
-  it('starts with the queue partly filled and the rest of the records on the shelf', () => {
-    const { container } = render(<RecordShelf />);
-
-    expect(queued(container)).toHaveLength(deck.seed);
-    expect(onShelf(container)).toHaveLength(albums.length - deck.seed);
-  });
-
-  it('never shows the same record in the queue and on the shelf at once', () => {
-    const { container } = render(<RecordShelf />);
-
-    const inQueue = queued(container);
-    const shelved = onShelf(container);
-
-    expect(inQueue.filter((slug) => shelved.includes(slug))).toEqual([]);
-    expect([...inQueue, ...shelved].sort()).toEqual(albums.map((album) => album.slug).sort());
-  });
-
-  it('gives every shelf record a button named for the album it plays', async () => {
-    const user = userEvent.setup();
-    const { container } = render(<RecordShelf />);
-
-    const shelved = onShelf(container);
-    const target = shelved[0] as string;
-    const album = albums.find((candidate) => candidate.slug === target);
-
-    const button = screen.getByRole('button', { name: `Play ${album?.title} by ${album?.artist}` });
-    expect(button).toBeInTheDocument();
-
-    await user.click(button);
-
-    expect(queued(container)[0]).toBe(target);
-    expect(onShelf(container)).not.toContain(target);
-  });
-
-  it('puts a clicked record at the front of the queue and drops the rest back one', async () => {
-    const user = userEvent.setup();
-    const { container } = render(<RecordShelf />);
-
-    const before = queued(container);
-    const target = onShelf(container)[0] as string;
-
-    await user.click(firstShelfButton(container));
-
-    // Nothing is evicted yet: the seeded queue still has room.
-    expect(queued(container)).toEqual([target, ...before]);
-  });
-
-  it('returns the record at the end of a full queue to the bottom of the shelf', async () => {
-    const user = userEvent.setup();
-    const { container } = render(<RecordShelf />);
-
-    // Fill the queue past capacity one pick at a time.
-    const picks = deck.queueSize - deck.seed + 1;
-    const shelved = onShelf(container).slice();
-
-    for (let i = 0; i < picks; i += 1) {
-      if (onShelf(container).length === 0) break;
-      await user.click(firstShelfButton(container));
-      advance(deck.flightMs + 100);
+    for (const row of rows) {
+      expect(row.querySelectorAll('.rails__slot').length).toBe(shelf.displayCols);
     }
+  });
 
-    // The queue never exceeds its capacity.
-    expect(queued(container)).toHaveLength(deck.queueSize);
+  it('files every record exactly once, split between rails and crate', () => {
+    const { container } = render(<RecordShelf />);
 
-    const shelfNow = onShelf(container);
-    expect(shelfNow).toHaveLength(albums.length - deck.queueSize);
-    expect(shelfNow[shelfNow.length - 1]).not.toBe(shelved[shelved.length - 1] as string);
+    const everywhere = [...onRails(container), ...inCrate(container)];
+    expect(everywhere.sort()).toEqual(albums.map((album) => album.slug).sort());
+    expect(new Set(everywhere).size).toBe(everywhere.length);
+  });
 
-    for (const slug of shelved.slice(0, picks)) {
-      expect(shelfNow.includes(slug), `${slug} should have left the shelf`).toBe(false);
+  it('starts with the rails full and the rest in the crate', () => {
+    const { container } = render(<RecordShelf />);
+
+    expect(onRails(container)).toHaveLength(displayCapacity);
+    expect(inCrate(container)).toHaveLength(albums.length - displayCapacity);
+    expect(nowPlaying(container)).toBeNull();
+  });
+
+  it('takes a record out of the shelf when it goes up, with no gap left behind', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<RecordShelf />);
+
+    const before = inCrate(container).length;
+    expect(before).toBe(albums.length - displayCapacity);
+    expect(container.querySelectorAll('.crate__gap')).toHaveLength(0);
+
+    const spare = spareFromCrate(container);
+    await user.click(buttonFor(container, spare));
+    advance(shelf.flightMs + 100);
+
+    // The stack is an overlap rather than fixed slots, so a promoted record just
+    // leaves it. The rails are full, so the tail comes back down at the same time
+    // and the stack holds its size instead of leaving a hole.
+    expect(inCrate(container)).not.toContain(spare);
+    expect(inCrate(container)).toHaveLength(before);
+    expect(container.querySelectorAll('.crate__slot')).toHaveLength(before);
+    expect(container.querySelectorAll('.crate__gap')).toHaveLength(0);
+  });
+
+  it('gives every record a button naming what clicking it does', () => {
+    const { container } = render(<RecordShelf />);
+
+    for (const album of albums) {
+      const button = buttonFor(container, album.slug);
+      expect(button.tagName).toBe('BUTTON');
+
+      const label = button.getAttribute('aria-label') ?? '';
+      expect(label).toContain(album.title);
+      expect(label).toContain(album.artist);
     }
+  });
+
+  it('puts a record from the crate onto the front of the rails and plays it', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<RecordShelf />);
+
+    const spare = spareFromCrate(container);
+    const album = albums.find((candidate) => candidate.slug === spare);
+
+    await user.click(buttonFor(container, spare));
+    advance(shelf.flightMs + 100);
+
+    expect(onRails(container)[0]).toBe(spare);
+    expect(nowPlaying(container)).toBe(album?.title);
+    expect(inCrate(container)).not.toContain(spare);
+  });
+
+  it('sends the record at the end of the queue back down to the crate', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<RecordShelf />);
+
+    // Rails start full, so the first lift has to push something off the end.
+    const tail = onRails(container).at(-1);
+    if (tail === undefined) throw new Error('expected a record on the rails');
+
+    await user.click(buttonFor(container, spareFromCrate(container)));
+    advance(shelf.flightMs + 100);
+
+    expect(onRails(container)).toHaveLength(displayCapacity);
+    expect(onRails(container)).not.toContain(tail);
+    expect(inCrate(container)).toContain(tail);
+  });
+
+  it('flies the returning record down at the same time as the picked one goes up', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<RecordShelf />);
+
+    await user.click(buttonFor(container, spareFromCrate(container)));
+
+    // Both the lift and the drop are travelling: two overlays, not one.
+    expect(container.querySelectorAll('.records__flight')).toHaveLength(2);
+
+    advance(shelf.flightMs + 100);
+    expect(container.querySelector('.records__flight')).toBeNull();
+  });
+
+  it('switches which rail record is playing without moving it', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<RecordShelf />);
+
+    const before = onRails(container);
+    await user.click(buttonFor(container, before[0]));
+    await user.click(buttonFor(container, before[1]));
+    advance(shelf.flightMs + 100);
+
+    expect(onRails(container)).toEqual(before);
+    expect(nowPlaying(container)).toBe(albums[1].title);
+  });
+
+  it('puts the playing record back in the crate when it is clicked again', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<RecordShelf />);
+
+    const slug = onRails(container)[0];
+    await user.click(buttonFor(container, slug));
+    await user.click(buttonFor(container, slug));
+    advance(shelf.flightMs + 100);
+
+    expect(inCrate(container)).toContain(slug);
+    expect(onRails(container)).not.toContain(slug);
+    expect(nowPlaying(container)).toBeNull();
+  });
+
+  it('marks only the playing record', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<RecordShelf />);
+
+    await user.click(buttonFor(container, onRails(container)[0]));
+
+    const marked = [
+      ...container.querySelectorAll<HTMLElement>('.shelf__sleeve[data-playing="true"]'),
+    ].map((node) => node.dataset.slot);
+
+    expect(marked).toEqual([onRails(container)[0]]);
   });
 
   it('is operable from the keyboard alone', async () => {
     const user = userEvent.setup();
     const { container } = render(<RecordShelf />);
 
-    const target = onShelf(container)[0] as string;
-    const first = firstShelfButton(container);
+    const spare = spareFromCrate(container);
+    await user.tab();
 
-    first.focus();
-    expect(first).toHaveFocus();
+    let guard = 0;
+    while (document.activeElement !== buttonFor(container, spare) && guard < albums.length + 4) {
+      await user.tab();
+      guard += 1;
+    }
+
+    expect(buttonFor(container, spare)).toHaveFocus();
 
     await user.keyboard('{Enter}');
+    advance(shelf.flightMs + 100);
 
-    expect(queued(container)[0]).toBe(target);
-    expect(onShelf(container)).not.toContain(target);
+    expect(onRails(container)[0]).toBe(spare);
   });
 
   it('announces the change for assistive tech', async () => {
     const user = userEvent.setup();
     const { container } = render(<RecordShelf />);
 
-    const button = firstShelfButton(container);
-    const label = button.getAttribute('aria-label') ?? '';
+    const status = container.querySelector('[role="status"]');
+    const spare = spareFromCrate(container);
 
-    await user.click(button);
+    await user.click(buttonFor(container, spare));
+    expect(status?.textContent).toContain('is playing');
 
-    const status = screen.getByRole('status');
-    expect(status.textContent).toContain('is playing');
-    expect(status.textContent).toContain(label.replace(/^Play /, '').split(' by ')[0] as string);
+    await user.click(buttonFor(container, spare));
+    expect(status?.textContent).toContain('crate');
   });
 
-  it('hides the real element while its record is in flight, then reveals it', async () => {
+  it('hides the real record while it is in flight, then reveals it', async () => {
     const user = userEvent.setup();
     const { container } = render(<RecordShelf />);
 
-    const target = onShelf(container)[0] as string;
-    await user.click(firstShelfButton(container));
+    const spare = spareFromCrate(container);
+    await user.click(buttonFor(container, spare));
 
-    // Mid-flight: the queue already holds the record and it is stepped out of
-    // the way, with the overlay standing in for it.
-    const sleeve = container.querySelector<HTMLElement>(
-      `.deck__slot[data-slot="${target}"] .deck__sleeve`,
-    );
-    expect(sleeve?.dataset.flying).toBe('true');
-    expect(container.querySelectorAll('.records__flight')).toHaveLength(1);
+    // Re-query: the record moves from the crate into a rail, so React unmounts
+    // the crate button and mounts a new one rather than reusing the node.
+    expect(buttonFor(container, spare)).toHaveAttribute('data-flying', 'true');
+    expect(container.querySelector('.records__flight')).not.toBeNull();
 
-    // Land it.
-    advance(deck.flightMs + 100);
+    advance(shelf.flightMs + 100);
 
-    expect(container.querySelectorAll('.records__flight')).toHaveLength(0);
-    expect(
-      container.querySelector<HTMLElement>(`.deck__slot[data-slot="${target}"] .deck__sleeve`)
-        ?.dataset.flying,
-    ).toBeUndefined();
+    expect(buttonFor(container, spare)).not.toHaveAttribute('data-flying');
+    expect(container.querySelector('.records__flight')).toBeNull();
   });
 
-  it('flies the returned record down at the same time as the picked one goes up', async () => {
+  it('reports the flight as loading until it lands', async () => {
     const user = userEvent.setup();
     const { container } = render(<RecordShelf />);
 
-    for (let i = 0; i < deck.queueSize - deck.seed; i += 1) {
-      await user.click(firstShelfButton(container));
-      advance(deck.flightMs + 100);
-    }
+    await user.click(buttonFor(container, spareFromCrate(container)));
+    expect(container.textContent).toContain('loading');
 
-    expect(queued(container)).toHaveLength(deck.queueSize);
-
-    // The queue is full. The next pick should displace two records at once.
-    const tailBefore = queued(container)[deck.queueSize - 1] as string;
-    const picked = onShelf(container)[0] as string;
-
-    await user.click(firstShelfButton(container));
-
-    expect(container.querySelectorAll('.records__flight')).toHaveLength(2);
-    expect(queued(container)[0]).toBe(picked);
-    expect(queued(container)).not.toContain(tailBefore);
-    expect(onShelf(container)[onShelf(container).length - 1]).toBe(tailBefore);
+    advance(shelf.flightMs + 100);
+    expect(container.textContent).toContain('now playing');
   });
 
   it('skips the flight entirely under reduced motion', async () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        matches: query.includes('prefers-reduced-motion'),
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+
     const user = userEvent.setup();
-    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
-      matches: query.includes('prefers-reduced-motion'),
-      media: query,
-      onchange: null,
-      addListener: () => {},
-      removeListener: () => {},
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      dispatchEvent: () => false,
-    }));
-
-    try {
-      const { container } = render(<RecordShelf />);
-      const target = onShelf(container)[0] as string;
-
-      await user.click(firstShelfButton(container));
-
-      // State still commits; nothing animates and nothing is hidden.
-      expect(queued(container)[0]).toBe(target);
-      expect(container.querySelectorAll('.records__flight')).toHaveLength(0);
-      expect(
-        container.querySelector<HTMLElement>(`.deck__slot[data-slot="${target}"] .deck__sleeve`)
-          ?.dataset.flying,
-      ).toBeUndefined();
-    } finally {
-      vi.unstubAllGlobals();
-    }
-  });
-
-  it('shows the playing record with its artist and year', () => {
     const { container } = render(<RecordShelf />);
 
-    // The metadata lives below the queue, not inside the lead slot, so it cannot
-    // make that slot taller than the five behind it.
-    const meta = container.querySelector('.deck__meta');
-    const lead = container.querySelector('.deck__slot');
+    const spare = spareFromCrate(container);
+    await user.click(buttonFor(container, spare));
 
-    expect(within(meta as HTMLElement).getByText('now playing')).toBeInTheDocument();
-    expect(meta?.textContent).toMatch(/\d{4}/);
-    expect(meta?.closest('.deck__slot')).toBeNull();
-    expect(lead?.querySelector('.deck__meta')).toBeNull();
-  });
-
-  it('marks only the playing sleeve as playing', () => {
-    const { container } = render(<RecordShelf />);
-
-    expect(container.querySelectorAll('.deck__sleeve--playing')).toHaveLength(1);
-    expect(container.querySelector('.deck__slot .deck__sleeve--playing')).not.toBeNull();
-  });
-
-  it('counts the records left on the shelf', () => {
-    const { container } = render(<RecordShelf />);
-
-    const foot = container.querySelector('.records__foot');
-    expect(foot?.textContent).toContain(String(albums.length - deck.seed));
-  });
-
-  it('states the shelf and queue size from the data rather than hardcoding them', () => {
-    const { container } = render(<RecordShelf />);
-
-    const intro = container.querySelector('.records__intro')?.textContent ?? '';
-
-    expect(intro).toContain(String(albums.length));
-    expect(intro).toContain(String(deck.queueSize));
+    expect(container.querySelector('.records__flight')).toBeNull();
+    expect(onRails(container)[0]).toBe(spare);
   });
 
   it('holds the section copy to the same house style as the rest of the site', () => {
@@ -360,8 +376,7 @@ describe('record shelf', () => {
 
     const copy = [
       container.querySelector('.records__intro')?.textContent ?? '',
-      container.querySelector('.records__foot')?.textContent ?? '',
-      container.querySelector('.deck__meta')?.textContent ?? '',
+      container.querySelector('.records__meta')?.textContent ?? '',
     ].join(' ');
 
     expect(copy).not.toContain('—');
@@ -389,45 +404,97 @@ describe('record shelf stylesheet', () => {
     expect(shelfCss).toMatch(/\[data-flying='true'\]\s*\{[^}]*visibility:\s*hidden/);
   });
 
-  it('tints each spine from its own artwork colour', () => {
-    expect(shelfCss).toMatch(/\.shelf__spine\s*\{[^}]*background:\s*var\(--spine\)/);
-  });
-
   it('puts the flight overlay in a fixed full-viewport layer', () => {
-    expect(shelfCss).toMatch(/\.records__flights\s*\{[^}]*position:\s*fixed[^}]*inset:\s*0/);
-    expect(shelfCss).toMatch(/\.records__flights\s*\{[^}]*pointer-events:\s*none/);
+    expect(shelfCss).toMatch(/\.records__flights\s*\{[^}]*position:\s*fixed/);
   });
 
-  it('writes spine titles vertically, as they run on a record', () => {
-    expect(shelfCss).toMatch(/writing-mode:\s*vertical-rl/);
+  it('draws a rail under each row of display slots', () => {
+    expect(shelfCss).toMatch(/\.rails__row::after\s*\{[^}]*height:\s*1px/);
   });
 
-  it('takes the hover lift away under reduced motion', () => {
-    expect(shelfCss).toMatch(/@media \(prefers-reduced-motion: reduce\)/);
+  it('keeps empty slots visible so the rails read as having capacity', () => {
+    expect(shelfCss).toMatch(/\.rails__empty\s*\{[^}]*border:\s*1px dashed/);
   });
 
-  it('keeps the now-playing metadata out of the queue slots', () => {
-    // Inside a slot the taller lead column shunts the rest of the queue into a
-    // ragged wrap on narrow viewports, so the metadata is a sibling of the row.
-    expect(shelfCss).not.toMatch(/\.deck__slot\s+\.deck__meta/);
+  it('stacks the shelf face out rather than filing it spine out', () => {
+    // The shelf's covers are the record art, not a tinted spine bar.
+    expect(shelfCss).not.toMatch(/--spine/);
+    expect(shelfCss).not.toMatch(/writing-mode/);
   });
 
-  it('grids the queue into even rows on a phone rather than wrapping it', () => {
+  it('makes the shelf a scrolling row rather than something that widens the page', () => {
+    expect(shelfCss).toMatch(/\.crate\s*\{[^}]*overflow-x:\s*auto/);
+  });
+
+  it('draws the shelf as one thin line in the same grey as the rails', () => {
+    // The rails are drawn with --border-strong; the shelf has to match, or it
+    // reads as a different material from the furniture above it.
     expect(shelfCss).toMatch(
-      /@media \(max-width: 40rem\)[\s\S]*?\.deck\s*\{[^}]*display:\s*grid[^}]*repeat\(3,/,
+      /\.crate\s*\{[^}]*border-bottom:\s*\d+px solid var\(--border-strong\)/,
     );
+    expect(shelfCss).toMatch(/\.rails__row::after\s*\{[^}]*background:\s*var\(--border-strong\)/);
   });
 
-  it('gives the lead queue slot no extra width on a phone', () => {
-    // Otherwise the enlarged first cover straddles the grid's row break.
+  it('overlaps the sleeves so the shelf reads as a stack of records', () => {
+    // Each sleeve is tucked behind the one in front by the width it is hidden by,
+    // which is what makes the shelf read as a crate of LPs instead of a row.
     expect(shelfCss).toMatch(
-      /\.deck__slot,\s*\.deck__slot:first-child\s*\{\s*width:\s*auto;?\s*\}/,
+      /\.crate__slot\s*\{[^}]*margin-left:\s*calc\(var\(--reveal\)\s*-\s*var\(--sleeve\)\)/,
     );
+    expect(shelfCss).toMatch(/\.crate__slot:first-child\s*\{\s*margin-left:\s*0/);
+  });
+
+  it('ranks the front sleeve above the ones behind it', () => {
+    expect(shelfCss).toMatch(/\.shelf__sleeve--crate\s*\{[^}]*z-index:\s*var\(--z/);
+    // A local stacking context, or the sleeves would rank against the whole page.
+    expect(shelfCss).toMatch(/\.crate\s*\{[^}]*isolation:\s*isolate/);
+  });
+
+  it('peeks a sleeve out of the stack on hover instead of lifting it', () => {
+    // Slid sideways and tipped from the shelf edge, which is what makes an album
+    // in the middle of the stack identifiable.
+    expect(shelfCss).toMatch(
+      /\.shelf__sleeve--crate:hover[\s\S]*?transform:\s*translateX\([^)]*\)\s*rotate\(-[^)]*\)/,
+    );
+    expect(shelfCss).toMatch(/transform-origin:\s*0 100%/);
+  });
+
+  it('takes the pull-off away under reduced motion', () => {
+    const reduced = shelfCss.slice(shelfCss.indexOf('@media (prefers-reduced-motion: reduce)'));
+
+    expect(reduced).toMatch(/transform:\s*none/);
+  });
+
+  it('references no custom property that is never defined', () => {
+    const globalCss = readFileSync(resolve(process.cwd(), 'src/styles/global.css'), 'utf8');
+
+    // Declared anywhere a stylesheet can see: the theme, or this component's own
+    // scope. --z is set inline by the component from the slot index.
+    const defined = new Set(
+      [
+        ...globalCss.matchAll(/(--[a-z0-9-]+)\s*:/g),
+        ...shelfCss.matchAll(/(--[a-z0-9-]+)\s*:/g),
+      ].map((match) => match[1]),
+    );
+    defined.add('--z');
+
+    // A var() with no fallback has to resolve, or the browser drops the declaration
+    // silently. That is how the rail line and the sleeve backgrounds went missing
+    // once already: both used a token nothing ever declared.
+    const missing = [...shelfCss.matchAll(/var\(\s*(--[a-z0-9-]+)\s*([,)])/g)]
+      .filter(([, , closer]) => closer !== ',')
+      .map(([, name]) => name)
+      .filter((name) => !defined.has(name))
+      .sort();
+
+    expect(missing, `undefined custom properties: ${missing.join(', ')}`).toEqual([]);
   });
 
   it('introduces no raw colours outside the theme tokens', () => {
-    // Artwork colours live in the data module as --spine, so the stylesheet
-    // itself must not hardcode a hex.
-    expect(shelfCss).not.toMatch(/#[0-9a-f]{3,8}\b/i);
+    const hex = [...shelfCss.matchAll(/#[0-9a-f]{3,8}\b/gi)].map((match) => match[0].toLowerCase());
+
+    // Everything on this section comes from the palette; no hardware greys remain
+    // now that the turntable is gone.
+    expect(hex, `raw colours in stylesheet: ${hex.join(', ')}`).toEqual([]);
   });
 });
