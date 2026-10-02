@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import App from '../App';
-import { SECTION_IDS } from '../content';
+import { SECTION_IDS, SECTION_LABELS } from '../content';
 
 beforeEach(() => {
   window.location.hash = '';
@@ -23,10 +23,15 @@ describe('App', () => {
 
     // One link per section, in the same order the sections are laid out.
     const links = within(toc).getAllByRole('link');
-    expect(links.map((link) => link.textContent)).toEqual([...SECTION_IDS]);
+    expect(links.map((link) => link.textContent)).toEqual(
+      SECTION_IDS.map((id) => SECTION_LABELS[id]),
+    );
 
     for (const id of SECTION_IDS) {
-      expect(within(toc).getByRole('link', { name: id })).toHaveAttribute('href', `#${id}`);
+      expect(within(toc).getByRole('link', { name: SECTION_LABELS[id] })).toHaveAttribute(
+        'href',
+        `#${id}`,
+      );
     }
 
     // Exactly one item is marked current; jsdom lays every section out at the top,

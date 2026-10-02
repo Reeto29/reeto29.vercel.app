@@ -15,6 +15,21 @@ export const SECTION_IDS = [
 
 export type SectionId = (typeof SECTION_IDS)[number];
 
+/**
+ * Display names for the sections, used by the table of contents. Every id is its
+ * own label except the record shelf, which reads as data rather than as the
+ * listening shelf it is; its id stays `records` so its anchor and aria wiring are
+ * unchanged, only the words on screen move.
+ */
+export const SECTION_LABELS: Record<SectionId, string> = {
+  records: 'music i like',
+  work: 'work',
+  projects: 'projects',
+  skills: 'skills',
+  education: 'education',
+  contact: 'contact',
+};
+
 export const profile = {
   name: 'reeto ghosh',
   nameTitle: 'Reeto Ghosh',

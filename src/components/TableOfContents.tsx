@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { SECTION_IDS } from '../content';
+import { SECTION_IDS, SECTION_LABELS } from '../content';
 
 /**
  * A fixed table of contents in the viewport's left gutter, outside the centred
@@ -64,7 +64,7 @@ export function TableOfContents() {
               href={`#${id}`}
               aria-current={activeId === id ? 'true' : undefined}
             >
-              {id}
+              {SECTION_LABELS[id]}
             </a>
           </li>
         ))}

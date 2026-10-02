@@ -202,7 +202,7 @@ export function RecordShelf() {
   return (
     <section className="section" id="records" aria-labelledby="records-heading">
       <h2 className="label section__label" id="records-heading">
-        records
+        music i like
       </h2>
 
       <div className="section__body">
