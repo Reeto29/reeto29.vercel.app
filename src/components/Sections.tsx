@@ -78,20 +78,20 @@ export function Education() {
       </h2>
 
       <div className="section__body">
-        <div className="row row--static">
-          <div className="row__meta">
-            <span className="row__title row__title--serif">{degree.degree}</span>
-            <span className="row__dates">
-              {degree.startDate.slice(-4)} – {degree.endDate.slice(-4)}
-            </span>
-          </div>
+        {/*
+          A stacked block rather than a two-column .row: the degree is a long line,
+          so it takes the full width of the section with the school beneath it,
+          instead of being squeezed into the narrow meta column the work entries
+          use.
+        */}
+        <p className="edu__degree">{degree.degree}</p>
 
-          <div className="row__body">
-            <p className="row__desc">
-              {degree.institution}, {degree.location}
-            </p>
-          </div>
-        </div>
+        <p className="edu__school">
+          {degree.institution}, {degree.location}
+          <span className="edu__years">
+            {degree.startDate.slice(-4)} – {degree.endDate.slice(-4)}
+          </span>
+        </p>
 
         <dl className="skills skills--inset">
           <div className="skills__row">

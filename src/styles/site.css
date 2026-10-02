@@ -241,12 +241,46 @@
 }
 
 /* Skills sit in two columns so the section fills the width without cards. */
+/*
+  Education. The degree is a single long line, so it runs the full width of the
+  section with the school and coursework stacked beneath it. The serif treatment
+  matches the italic degree the education row used to carry, scaled up a little
+  now that it has the whole column to itself.
+*/
+.edu__degree {
+  color: var(--t-primary);
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-style: italic;
+  line-height: 1.3;
+  font-variation-settings:
+    'SOFT' 0,
+    'WONK' 0,
+    'opsz' 30;
+}
+
+.edu__school {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  margin-top: 0.5rem;
+  color: var(--t-secondary);
+  font-size: 14px;
+}
+
+.edu__years {
+  color: var(--t-label);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
 .skills {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.25rem 3rem;
 }
-
 @media (min-width: 46rem) {
   .skills {
     grid-template-columns: repeat(2, minmax(0, 1fr));
