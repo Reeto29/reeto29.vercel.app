@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import App from '../App';
@@ -87,15 +87,17 @@ describe('App', () => {
     }
   });
 
-  it('links the résumé as a download', () => {
+  it('offers no résumé download anywhere on the page', () => {
     render(<App />);
 
-    const footnote = document.querySelector('.footnote');
-    expect(footnote?.textContent).toContain('résumé (pdf)');
+    // Deliberately a negative assertion: the résumé is not published, so there
+    // must be no link to a PDF and no file sitting behind one.
+    for (const link of screen.getAllByRole('link')) {
+      expect(link.getAttribute('href')).not.toMatch(/\.pdf$/i);
+      expect(link).not.toHaveAttribute('download');
+    }
 
-    const resume = within(footnote as HTMLElement).getByRole('link', { name: /download/i });
-    expect(resume).toHaveAttribute('download');
-    expect(resume.getAttribute('href')).toMatch(/\.pdf$/);
+    expect(document.body.textContent ?? '').not.toMatch(/r[ée]sum[ée]/i);
   });
 
   it('has no links pointing at a dead href', () => {

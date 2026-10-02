@@ -2,9 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { education, experience, profile, projects, SECTION_IDS, skills, socials } from '../content';
 
 describe('content integrity', () => {
-  it('exposes an email and a reachable résumé asset', () => {
+  it('exposes an email', () => {
     expect(profile.email).toMatch(/@/);
-    expect(profile.resumePath).toMatch(/^\/.+\.pdf$/);
+  });
+
+  it('publishes no résumé path', () => {
+    // The résumé is not part of the site, so nothing in the content should point
+    // at a downloadable document.
+    expect(JSON.stringify(profile)).not.toMatch(/\.pdf/i);
   });
 
   it('has complete experience entries in reverse-chronological order', () => {

@@ -1,5 +1,5 @@
 import type { Experience as ExperienceEntry } from '../types';
-import { experience, profile, socials } from '../content';
+import { experience, socials } from '../content';
 import { ExternalArrow } from './icons';
 
 function Entry({ entry }: { entry: ExperienceEntry }) {
@@ -50,11 +50,7 @@ export function Work() {
         </ul>
 
         <p className="footnote">
-          résumé (pdf):{' '}
-          <a className="sweep" href={profile.resumePath} download>
-            download
-          </a>{' '}
-          · everything else on{' '}
+          everything else on{' '}
           <a className="sweep" href={socials[0].href} target="_blank" rel="noopener noreferrer">
             github
             <ExternalArrow className="inline-arrow" />

@@ -20,7 +20,6 @@ export const profile = {
   nameTitle: 'Reeto Ghosh',
   location: 'Waterloo, ON',
   email: 'reeto.ghosh@uwaterloo.ca',
-  resumePath: '/ReetoGhosh_Resume.pdf',
   degree: 'B.Math (Honors), Statistics & Computational Mathematics',
   summary:
     "i'm in my last year at waterloo, graduating april 2027. currently looking for full time " +
