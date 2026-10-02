@@ -333,15 +333,22 @@ describe('record shelf', () => {
     expect(container.querySelector('.records__flight')).toBeNull();
   });
 
-  it('reports the flight as loading until it lands', async () => {
+  it('names the selected album while it is still in flight', async () => {
     const user = userEvent.setup();
     const { container } = render(<RecordShelf />);
 
-    await user.click(buttonFor(container, spareFromCrate(container)));
-    expect(container.textContent).toContain('loading');
+    const spare = spareFromCrate(container);
+    const album = albums.find((candidate) => candidate.slug === spare);
+
+    await user.click(buttonFor(container, spare));
+
+    // Named as soon as it is picked, not once it lands, and with no claim that
+    // anything is playing: it is not.
+    expect(nowPlaying(container)).toBe(album?.title);
+    expect(container.textContent).not.toMatch(/now playing|loading/i);
 
     advance(shelf.flightMs + 100);
-    expect(container.textContent).toContain('now playing');
+    expect(container.querySelector('.records__flight')).toBeNull();
   });
 
   it('skips the flight entirely under reduced motion', async () => {

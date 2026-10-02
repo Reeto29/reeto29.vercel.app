@@ -210,10 +210,10 @@ export function RecordShelf() {
           i really like listening to rnb. these are some of my favorite albums.
         </p>
 
-        {/* Only shown once something is playing: there is no idle state to fill. */}
+        {/* Only shown once a record has been pulled up: there is no idle state to
+            fill, and nothing here claims anything is playing. */}
         {nowPlaying !== undefined && (
           <p className="records__meta">
-            <span className="records__now">{flights.length > 0 ? 'loading' : 'now playing'}</span>
             <span className="records__title">{nowPlaying.title}</span>
             <span className="records__artist">
               {nowPlaying.artist}, {nowPlaying.year}

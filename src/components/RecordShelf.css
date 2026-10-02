@@ -236,15 +236,6 @@
   line-height: 1.5;
 }
 
-.records__now {
-  color: var(--t-label);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: var(--label-track);
-}
-
 .records__title {
   color: var(--t-primary);
   font-weight: 500;
