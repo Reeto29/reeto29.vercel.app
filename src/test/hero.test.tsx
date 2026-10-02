@@ -117,23 +117,33 @@ describe('photo ring', () => {
     }
   });
 
-  it('alternates orientation so a square crop does not read as one repeated shape', () => {
-    // The tiles are square, so portrait frames crop against their sides and
-    // landscape against top and bottom. Strict alternation is impossible with
-    // six landscape and four portrait photos, so the achievable rule is that no
-    // three in a row share an orientation.
-    const isPortrait = (photo: { src: string }) =>
-      /\/(manhattan-bridge|tahoe-shore|autumn-trail|elevator)\./.test(photo.src);
+  it('leads with the photographs that have people in them', () => {
+    // This list used to alternate landscape and portrait, which encoded an
+    // aesthetic preference rather than anything the reader asked for, and it
+    // reordered itself twice without being told to. The order is now: the five
+    // photos with people, starting with the two of the photographer and their
+    // friends, then the places. Assert the rule that was actually chosen rather
+    // than the tidier one it replaced.
+    const expected = [
+      'sunset-friends',
+      'elevator',
+      'manhattan-bridge',
+      'autumn-trail',
+      'summit-ridge',
+      'golden-gate',
+      'palace-of-fine-arts',
+      'san-francisco-street',
+      'tahoe-shore',
+      'vintage-tvs',
+    ];
 
-    expect(photos.filter(isPortrait).length).toBe(4);
+    expect(photos.map((photo) => photo.src.replace('/photos/', '').replace('.jpg', ''))).toEqual(
+      expected,
+    );
 
-    for (let i = 0; i + 2 < photos.length; i += 1) {
-      const run = [photos[i], photos[i + 1], photos[i + 2]].map(isPortrait);
-      expect(
-        run.every((same) => same === run[0]),
-        `photos ${i}-${i + 2} are all the same orientation`,
-      ).toBe(false);
-    }
+    // The two opening frames are the ones of the photographer and their friends.
+    expect(photos[0]?.src).toContain('sunset-friends');
+    expect(photos[1]?.src).toContain('elevator');
   });
 
   it('holds the grid light enough to sit behind the masthead', () => {
