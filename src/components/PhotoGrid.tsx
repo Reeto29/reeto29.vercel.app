@@ -44,8 +44,23 @@ export function PhotoGrid() {
     const totalAngle = () =>
       spin.autoRange * Math.sin((2 * Math.PI * elapsed) / spin.autoPeriod) + manual;
 
+    /*
+      Both properties are written to the stage, which .grid__field inherits
+      from. Writing them to the field itself would work too, but the stylesheet
+      must not redeclare either name on the field, or a local declaration would
+      outrank the animated value and silently freeze the motion.
+
+      The horizontal shift is coupled to the angle because rotation alone is
+      mostly a scaling effect: even at 34 degrees the band slides only a little
+      on its own. Adding travel proportional to the same angle makes tiles enter
+      and leave the frame the way they would on a carousel. Proportional rather
+      than sin-shaped so the two stay in step at every point in the cycle.
+    */
     const paint = () => {
-      node.style.setProperty('--spin', `${totalAngle().toFixed(2)}deg`);
+      const angle = totalAngle();
+
+      node.style.setProperty('--spin', `${angle.toFixed(2)}deg`);
+      node.style.setProperty('--shift', `${(angle * spin.shiftPerDegree).toFixed(2)}px`);
     };
 
     const tick = (now: number) => {
@@ -186,7 +201,9 @@ export function PhotoGrid() {
       className="grid__stage"
       ref={stageRef}
       role="group"
-      aria-label={`Rotating grid of ${photos.length} travel photographs. Use the left and right arrow keys to turn it.`}
+      aria-label={`Rotating grid of ${photos.length} photographs: ${photos
+        .map((photo) => photo.alt)
+        .join('; ')}. Use the left and right arrow keys to turn it.`}
       tabIndex={0}
     >
       <div className="grid__viewport">
@@ -202,7 +219,14 @@ export function PhotoGrid() {
                 } as CSSProperties
               }
             >
-              <img className="grid__img" src={photo.src} alt="" loading="lazy" decoding="async" />
+              {/*
+                No loading="lazy" here. The band is one row ten tiles wide, so
+                most tiles start parked outside the viewport and lazy loading
+                never fetches them. They then swing into view as empty frames as
+                the carousel turns. The whole set is needed for the first sweep,
+                so it is fetched up front.
+              */}
+              <img className="grid__img" src={photo.src} alt="" decoding="async" />
             </div>
           ))}
         </div>

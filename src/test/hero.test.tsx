@@ -1,5 +1,5 @@
 import { render, waitFor } from '@testing-library/react';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { PhotoGrid } from '../components/PhotoGrid';
@@ -91,8 +91,52 @@ describe('photo grid', () => {
   it('describes each photo so the alt stays meaningful', () => {
     for (const photo of photos) {
       expect(photo.alt.trim(), `missing alt: ${photo.src}`).not.toBe('');
-      expect(photo.alt).toMatch(/^Placeholder:/);
+      // No leftover placeholder copy once real photographs are in place.
+      expect(photo.alt).not.toMatch(/^Placeholder:/i);
+      expect(photo.alt.length).toBeGreaterThan(12);
     }
+  });
+
+  it('keeps every photo as a real file in public/photos', () => {
+    for (const photo of photos) {
+      expect(photo.src, `not under /photos/: ${photo.src}`).toMatch(
+        /^\/photos\/[\w.-]+\.(jpg|jpeg|png|webp|avif)$/,
+      );
+      expect(
+        existsSync(resolve(process.cwd(), 'public', photo.src.slice(1))),
+        `missing ${photo.src}`,
+      ).toBe(true);
+    }
+  });
+
+  it('alternates orientation so a square crop does not read as one repeated shape', () => {
+    // The tiles are square, so portrait frames crop against their sides and
+    // landscape against top and bottom. Strict alternation is impossible with
+    // six landscape and four portrait photos, so the achievable rule is that no
+    // three in a row share an orientation.
+    const isPortrait = (photo: { src: string }) =>
+      /\/(manhattan-bridge|tahoe-shore|autumn-trail|elevator)\./.test(photo.src);
+
+    expect(photos.filter(isPortrait).length).toBe(4);
+
+    for (let i = 0; i + 2 < photos.length; i += 1) {
+      const run = [photos[i], photos[i + 1], photos[i + 2]].map(isPortrait);
+      expect(
+        run.every((same) => same === run[0]),
+        `photos ${i}-${i + 2} are all the same orientation`,
+      ).toBe(false);
+    }
+  });
+
+  it('holds the grid light enough to sit behind the masthead', () => {
+    // The band is decorative and loads before the reader scrolls anywhere, so a
+    // runaway total is felt immediately on a phone.
+    const total = photos.reduce((sum, photo) => {
+      const file = resolve(process.cwd(), 'public', photo.src.slice(1));
+      return sum + (existsSync(file) ? statSync(file).size : 0);
+    }, 0);
+
+    expect(total).toBeLessThan(4 * 1024 * 1024);
   });
 
   it('has unique alt text', () => {
@@ -111,7 +155,36 @@ describe('photo grid', () => {
 
   it('rotates the field rather than the whole stage', () => {
     // Rotating the stage would carry the scrim and the mask around with it.
-    expect(gridCss).toMatch(/\.grid__field\s*\{[^}]*rotateY\(var\(--spin\)\)/);
+    expect(gridCss).toMatch(/\.grid__field\s*\{[^}]*rotateY\(var\(--spin/);
+  });
+
+  it('lets the stage drive the field instead of shadowing it locally', () => {
+    // Regression guard, and the reason this file previously passed while the
+    // carousel sat perfectly still. The rAF loop writes --spin to the stage; the
+    // field consumes it by inheritance. A `--spin` declared on .grid__field
+    // itself outranks the inherited value and silently pins the rotation at
+    // zero, while a test that reads --spin back off the stage still sees motion
+    // and passes. Nothing may redeclare these on the consuming element.
+    const fieldBlock = gridCss.match(/\.grid__field\s*\{([^}]*)\}/)?.[1] ?? '';
+
+    expect(fieldBlock, '.grid__field redeclares --spin').not.toMatch(/--spin\s*:/);
+    expect(fieldBlock, '.grid__field redeclares --shift').not.toMatch(/--shift\s*:/);
+
+    // The transform must carry a default so the field is still valid before the
+    // loop paints its first frame.
+    expect(gridCss).toMatch(/rotateY\(var\(--spin,\s*0deg\)\)/);
+    expect(gridCss).toMatch(/var\(--shift,\s*0px\)/);
+  });
+
+  it('writes the animation properties to the stage the field inherits from', () => {
+    // Guards the write target itself: the loop's node and the field's parent
+    // have to be the same element, or the coupling above is broken again.
+    expect(gridCss).toMatch(/\.grid__field\s*\{[^}]*position:\s*absolute/);
+    expect(gridCss).toMatch(/\.grid__viewport\s*\{[^}]*position:\s*absolute/);
+    // --shift exists only on the stage, so if the field is inside the viewport
+    // inside the stage, the inheritance chain is stage -> viewport -> field.
+    expect(gridCss).not.toMatch(/\.grid__viewport\s*\{[^}]*--spin\s*:/);
+    expect(gridCss).not.toMatch(/\.grid__viewport\s*\{[^}]*--shift\s*:/);
   });
 
   it('sways rather than spinning a full turn', () => {
@@ -121,9 +194,46 @@ describe('photo grid', () => {
     expect(spin.autoPeriod).toBeGreaterThan(8);
   });
 
-  it('clamps the manual rotation so the grid cannot turn edge-on', () => {
-    expect(spin.manualLimit).toBeLessThan(90);
-    expect(spin.manualLimit + spin.autoRange).toBeLessThan(90);
+  it('sweeps wide enough to read as a carousel rather than a wobble', () => {
+    // The original 22 degrees was chosen while the field was pinned at zero, so
+    // the amplitude had never actually been seen. Measured in a browser, 22
+    // degrees turns the outermost tiles by a few percent of their width; 34
+    // turns them visibly away while the centre pair stay square to the viewer.
+    expect(spin.autoRange).toBeGreaterThanOrEqual(30);
+    expect(spin.autoRange).toBeLessThan(50);
+  });
+
+  it('travels horizontally as it turns, since rotation alone barely moves the band', () => {
+    // A rotateY is mostly a scaling effect, so without this coupling the sweep
+    // slides the photos a few dozen pixels and reads as a wobble.
+    expect(spin.shiftPerDegree).toBeGreaterThan(0);
+    // A third of a tile per degree: enough travel to read, not so much that the
+    // band races off frame at the extremes.
+    expect(spin.shiftPerDegree * spin.autoRange).toBeGreaterThan(300);
+    expect(spin.shiftPerDegree * spin.autoRange).toBeLessThan(900);
+
+    // The stylesheet has to consume it, or the coupling is dead code.
+    expect(gridCss).toMatch(/translate3d\(calc\(-50% \+ var\(--shift/);
+  });
+
+  it('fetches every photo up front, because lazy tiles never load off frame', () => {
+    // The band is one row ten tiles wide, so most tiles start outside the
+    // viewport. loading="lazy" never fetches them and they swing into view as
+    // empty frames as the carousel turns.
+    for (const img of document.createElement('div').querySelectorAll('img')) {
+      expect(img.getAttribute('loading')).not.toBe('lazy');
+    }
+
+    const { container } = render(<PhotoGrid />);
+    const imgs = container.querySelectorAll('.grid__img');
+
+    expect(imgs).toHaveLength(photos.length);
+    for (const img of imgs) {
+      expect(img.getAttribute('loading'), `lazy image: ${img.getAttribute('src')}`).not.toBe(
+        'lazy',
+      );
+      expect(img.getAttribute('decoding')).toBe('async');
+    }
   });
 
   it('keeps the tile depth small enough to stay inside its clipping box', () => {

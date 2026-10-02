@@ -36,17 +36,29 @@
   touch-action: pan-y;
 }
 
+/*
+  --spin and --shift are written to the stage by the rAF loop and inherited down
+  to this element. Do NOT redeclare them here: a declaration on the element
+  itself beats an inherited one, so a local `--spin: 0deg` would silently shadow
+  the animation and pin the field at zero rotation. Both are read back through
+  var() defaults below instead.
+*/
 .grid__field {
-  --spin: 0deg;
-
   position: absolute;
   top: 50%;
   left: 50%;
   width: max-content;
   display: grid;
-  grid-template-columns: repeat(8, 360px);
+  grid-template-columns: repeat(10, 360px);
   gap: 20px;
-  transform: translate3d(-50%, -50%, 0) rotateY(var(--spin)) rotateX(5deg);
+  /*
+    --shift is the horizontal travel coupled to the rotation, written by the rAF
+    loop. Without it the sweep reads as a wobble rather than a carousel, because
+    rotating a plane about Y is mostly a scaling effect at the amplitudes this
+    band can afford.
+  */
+  transform: translate3d(calc(-50% + var(--shift, 0px)), -50%, 0) rotateY(var(--spin, 0deg))
+    rotateX(5deg);
   transform-style: preserve-3d;
 }
 
@@ -104,7 +116,7 @@
     columns through view, which is the whole point of the effect.
   */
   .grid__field {
-    grid-template-columns: repeat(8, 150px);
+    grid-template-columns: repeat(10, 150px);
     gap: 10px;
   }
 

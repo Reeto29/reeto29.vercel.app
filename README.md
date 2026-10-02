@@ -30,7 +30,7 @@ src/
     layout.css     shell, section rhythm, link sweep, grain
     site.css       rows, skill table, masthead, footer
   test/            vitest specs + jsdom shims
-public/            favicon, manifest, résumé PDF
+public/            favicon, manifest, album covers
 ```
 
 ## Editing content
@@ -50,11 +50,20 @@ first, no adjectives.
 (columns, rows, tile size, gap), and `spin` (the automatic sway and how far the
 keyboard can turn it).
 
-The images currently in `public/photos/` are generated placeholders. Regenerate
-them with `python3 scripts/make_placeholders.py`, or replace them with real
-photographs — aim for roughly `tile / 2` px square, which keeps the whole grid
-well under 100 kB. There is one photo per tile, so the list length must stay equal to
-`columns * rows`; a test enforces it.
+The images in `public/photos/` are real photographs: ten personal shots, each
+converted from HEIC and re-encoded at 1000px on the long edge at quality 74,
+about 2.5 MB for the set. They are decorative and load before the reader scrolls
+anywhere, so the total is asserted to stay under 4 MB. To swap them, drop a file
+into `public/photos/` and point `photos[].src` at it.
+
+Tiles are square but the photographs are not, so the order matters: portrait
+frames crop against their sides and landscape against top and bottom. A test
+rejects three-in-a-row of the same orientation. There is one photo per tile, so
+the list length must stay equal to `columns * rows`; another test enforces it.
+
+Alt text is written per photo but is deliberately not announced. The grid is
+decorative and moves on its own, so all ten descriptions are folded into the one
+`aria-label` on the stage rather than ten separate image labels.
 
 Motion: the grid sways on its own, arrow keys or a drag turn it, and your manual
 offset eases back to centre. `prefers-reduced-motion` stops the automatic sway but
