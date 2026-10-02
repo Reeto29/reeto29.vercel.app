@@ -6,6 +6,7 @@ import { Work } from './components/Work';
 import { RecordShelf } from './components/RecordShelf';
 import { Education, Projects, Skills } from './components/Sections';
 import { Contact } from './components/Contact';
+import { TableOfContents } from './components/TableOfContents';
 
 export default function App() {
   useHashScroll();
@@ -16,6 +17,8 @@ export default function App() {
       <a className="skip-link" href="#main">
         skip to content
       </a>
+
+      <TableOfContents />
 
       <div className="grain" aria-hidden="true" />
 

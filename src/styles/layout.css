@@ -75,6 +75,57 @@
   }
 }
 
+/*
+  Table of contents.
+
+  A fixed sidebar that lives in the viewport's left gutter, outside the centred
+  .shell, so it never competes with the sticky per-section labels inside the
+  column. `left: calc(50% - 40rem)` keeps a fixed 1rem gap from the shell's left
+  edge; the 80rem breakpoint is where that gutter first has room, which also keeps
+  the sidebar on-screen (50% - 40rem only goes positive at 80rem). Below it the TOC
+  is removed entirely, since the in-column sticky labels already carry the section
+  names and a floating nav would cover the content on a phone.
+*/
+.toc {
+  position: fixed;
+  z-index: 4;
+  top: 50%;
+  left: calc(50% - 40rem);
+  transform: translateY(-50%);
+  width: 8rem;
+  display: none;
+}
+
+@media (min-width: 80rem) {
+  .toc {
+    display: block;
+  }
+}
+
+.toc__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.toc__link {
+  display: block;
+  color: var(--t-label);
+  font-size: 13px;
+  line-height: 1.3;
+  transition: color 0.15s ease;
+}
+
+.toc__link:hover,
+.toc__link:focus-visible {
+  color: var(--t-secondary);
+}
+
+/* The active item takes the accent, the way a nav marks where you are. */
+.toc__link[aria-current='true'] {
+  color: var(--accent);
+}
+
 .section + .section {
   margin-top: 5rem;
 }

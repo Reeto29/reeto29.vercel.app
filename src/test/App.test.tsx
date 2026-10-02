@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import App from '../App';
@@ -14,6 +14,24 @@ describe('App', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'reeto ghosh' })).toBeInTheDocument();
     expect(screen.getAllByText(/Statistics & Computational Mathematics/).length).toBeGreaterThan(0);
+  });
+
+  it('renders a table of contents linking every section, marking the active one', () => {
+    render(<App />);
+
+    const toc = screen.getByRole('navigation', { name: /table of contents/i });
+
+    // One link per section, in the same order the sections are laid out.
+    const links = within(toc).getAllByRole('link');
+    expect(links.map((link) => link.textContent)).toEqual([...SECTION_IDS]);
+
+    for (const id of SECTION_IDS) {
+      expect(within(toc).getByRole('link', { name: id })).toHaveAttribute('href', `#${id}`);
+    }
+
+    // Exactly one item is marked current; jsdom lays every section out at the top,
+    // so the last one wins the reading line.
+    expect(toc.querySelectorAll('[aria-current="true"]')).toHaveLength(1);
   });
 
   it('renders every section named by SECTION_IDS', () => {
