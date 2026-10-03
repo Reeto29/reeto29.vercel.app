@@ -315,3 +315,47 @@
     transition: none;
   }
 }
+
+/*
+  Deck and shelves side by side.
+
+  The deck gets a column of its own on the left and the shelves take the rest, so
+  the turntable reads as a fixture beside the records rather than a banner above
+  them. It sticks while the shelves scroll past, which is what makes it feel like
+  part of the furniture instead of a caption at the top of the section.
+
+  Below the breakpoint the two stack, deck first, so the platter is what you meet
+  before the sleeves on a phone.
+*/
+.records__layout {
+  display: grid;
+  gap: 2.5rem;
+}
+
+@media (min-width: 60rem) {
+  .records__layout {
+    grid-template-columns: 15rem minmax(0, 1fr);
+    gap: 0 3rem;
+    align-items: start;
+  }
+
+  /* Stacked deck: the platter above its own caption, not beside it. */
+  .records__layout .deck {
+    position: sticky;
+    top: 2rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  /* The shelves are the second grid child, so they sit to the right of the deck. */
+  .records__layout > .rails,
+  .records__layout > .crate {
+    grid-column: 2;
+  }
+
+  .records__layout > .deck {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+}

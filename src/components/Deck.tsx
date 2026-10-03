@@ -64,42 +64,63 @@ export function Deck({
     }
   }, [album, src]);
 
-  if (album === undefined) {
-    return (
-      <div className="deck deck--empty">
-        <p className="deck__idle">nothing on the deck</p>
-      </div>
-    );
-  }
-
+  /*
+    The platter is rendered whether or not a record is on it, so the deck keeps
+    its place in the layout and putting a record on it does not shove the shelves
+    sideways. Only the label, the caption, and the audio element come and go.
+  */
   return (
-    <div className="deck">
-      <button
-        type="button"
-        className="deck__platter"
-        data-spinning={spinning ? 'true' : undefined}
-        onClick={(event) => onLift(album, event.currentTarget)}
-      >
-        <span className="deck__vinyl" aria-hidden="true">
-          <img className="deck__label" src={album.cover} alt="" width={600} height={600} />
+    <div className="deck" data-empty={album === undefined ? 'true' : undefined}>
+      {album === undefined ? (
+        <span className="deck__platter deck__platter--empty">
+          <span className="deck__spindle" aria-hidden="true" />
+          <span className="visually-hidden">the turntable is empty</span>
         </span>
+      ) : (
+        <button
+          type="button"
+          className="deck__platter"
+          /*
+            data-slot is what the flight overlay measures as a destination, so a
+            record leaving the main shelf lands on the platter instead of fading
+            out and reappearing.
+          */
+          data-slot={album.slug}
+          data-spinning={spinning ? 'true' : undefined}
+          onClick={(event) => onLift(album, event.currentTarget)}
+        >
+          <span className="deck__vinyl" aria-hidden="true">
+            <img className="deck__label" src={album.cover} alt="" width={600} height={600} />
+          </span>
 
-        <span className="visually-hidden">
-          Put {album.title} by {album.artist} back on the main shelf
-        </span>
-      </button>
+          <span className="visually-hidden">
+            Put {album.title} by {album.artist} back on the main shelf
+          </span>
+        </button>
+      )}
 
       <div className="deck__meta">
-        <span className="deck__track">
-          {album.trackName}
-          <span className="deck__clip">30s preview</span>
-        </span>
-        <span className="deck__by">
-          {album.artist}, {album.year}
-        </span>
-        <a className="deck__link sweep" href={album.link} target="_blank" rel="noopener noreferrer">
-          hear the whole thing on apple music
-        </a>
+        {album === undefined ? (
+          <span className="deck__idle">nothing on the deck</span>
+        ) : (
+          <>
+            <span className="deck__track">
+              {album.trackName}
+              <span className="deck__clip">30s preview</span>
+            </span>
+            <span className="deck__by">
+              {album.artist}, {album.year}
+            </span>
+            <a
+              className="deck__link sweep"
+              href={album.link}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              hear the whole thing on apple music
+            </a>
+          </>
+        )}
       </div>
 
       {/*
@@ -112,15 +133,17 @@ export function Deck({
         music with no spoken content to transcribe. The track is named in the
         caption beside the platter, which is the part worth conveying.
       */}
-      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-      <audio
-        ref={audioRef}
-        src={src}
-        preload="none"
-        onPlay={() => setSpinning(true)}
-        onPause={() => setSpinning(false)}
-        onEnded={() => setSpinning(false)}
-      />
+      {album !== undefined && (
+        // eslint-disable-next-line jsx-a11y/media-has-caption
+        <audio
+          ref={audioRef}
+          src={src}
+          preload="none"
+          onPlay={() => setSpinning(true)}
+          onPause={() => setSpinning(false)}
+          onEnded={() => setSpinning(false)}
+        />
+      )}
     </div>
   );
 }

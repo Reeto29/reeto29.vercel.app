@@ -231,85 +231,88 @@ export function RecordShelf() {
         </p>
 
         {/*
-          The turntable sits above the shelves so a record has somewhere to land
-          that is not another sleeve.
+          The deck and the two shelves. On a wide screen the deck takes a column of
+          its own to the left and the shelves fill the rest; stacked, it comes first
+          so the platter is the thing you meet before the sleeves.
         */}
-        <Deck album={onDeck} onLift={(album, source) => takeOffDeck(album, source)} />
+        <div className="records__layout">
+          <Deck album={onDeck} onLift={(album, source) => takeOffDeck(album, source)} />
 
-        {/*
+          {/*
           The main shelf: a queue of slots in display order, newest at the front.
           A slot with nothing in it stays visible so the shelf reads as having a
           fixed capacity rather than shrinking as records are pulled off it.
         */}
-        <div className="rails">
-          {Array.from({ length: shelf.displayRows }, (_, row) => (
-            <ol className="rails__row" key={row} aria-label={`main shelf row ${row + 1}`}>
-              {Array.from({ length: shelf.displayCols }, (_, column) => {
-                const index = row * shelf.displayCols + column;
-                const slug = state.queue[index];
-                const album = slug === undefined ? undefined : albumAt(slug);
+          <div className="rails">
+            {Array.from({ length: shelf.displayRows }, (_, row) => (
+              <ol className="rails__row" key={row} aria-label={`main shelf row ${row + 1}`}>
+                {Array.from({ length: shelf.displayCols }, (_, column) => {
+                  const index = row * shelf.displayCols + column;
+                  const slug = state.queue[index];
+                  const album = slug === undefined ? undefined : albumAt(slug);
 
-                return (
-                  <li className="rails__slot" key={slug ?? `empty-${index}`}>
-                    {album === undefined ? (
-                      <span className="rails__empty" aria-hidden="true" />
-                    ) : (
-                      <button
-                        type="button"
-                        {...sleeveProps(album, 'rail')}
-                        aria-label={`Put ${album.title} by ${album.artist} on the turntable`}
-                        onClick={(event) => putOnDeck(album, event.currentTarget, index)}
-                      >
-                        <img
-                          className="shelf__cover"
-                          src={album.cover}
-                          alt=""
-                          loading={row === 0 && column < 3 ? 'eager' : 'lazy'}
-                          decoding="async"
-                        />
-                        <span className="shelf__spine-label" aria-hidden="true">
-                          {album.title}
-                        </span>
-                      </button>
-                    )}
-                  </li>
-                );
-              })}
-            </ol>
-          ))}
-        </div>
+                  return (
+                    <li className="rails__slot" key={slug ?? `empty-${index}`}>
+                      {album === undefined ? (
+                        <span className="rails__empty" aria-hidden="true" />
+                      ) : (
+                        <button
+                          type="button"
+                          {...sleeveProps(album, 'rail')}
+                          aria-label={`Put ${album.title} by ${album.artist} on the turntable`}
+                          onClick={(event) => putOnDeck(album, event.currentTarget, index)}
+                        >
+                          <img
+                            className="shelf__cover"
+                            src={album.cover}
+                            alt=""
+                            loading={row === 0 && column < 3 ? 'eager' : 'lazy'}
+                            decoding="async"
+                          />
+                          <span className="shelf__spine-label" aria-hidden="true">
+                            {album.title}
+                          </span>
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            ))}
+          </div>
 
-        {/*
+          {/*
           The bottom shelf. Every record that is neither on the main shelf nor on
           the turntable, stacked the way records sit in a crate of LPs: each sleeve
           overlaps the one before it, so only a strip of each cover shows and the
           stack reads as full however many records are in it. Hovering a sleeve
           pulls it out for a preview.
         */}
-        <ul className="crate" aria-label="records on the bottom shelf">
-          {albums
-            .filter((album) => !queued.has(album.slug) && state.deck !== album.slug)
-            .map((album, index) => (
-              <li className="crate__slot" key={album.slug}>
-                <button
-                  type="button"
-                  {...sleeveProps(album, 'crate')}
-                  aria-label={`Put ${album.title} by ${album.artist} on the main shelf`}
-                  onClick={(event) => pullUp(album, event.currentTarget)}
-                  // Front sleeve on top: stacking order comes from the slot index.
-                  style={{ '--z': String(albums.length - index) } as CSSProperties}
-                >
-                  <img
-                    className="shelf__cover"
-                    src={album.cover}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </button>
-              </li>
-            ))}
-        </ul>
+          <ul className="crate" aria-label="records on the bottom shelf">
+            {albums
+              .filter((album) => !queued.has(album.slug) && state.deck !== album.slug)
+              .map((album, index) => (
+                <li className="crate__slot" key={album.slug}>
+                  <button
+                    type="button"
+                    {...sleeveProps(album, 'crate')}
+                    aria-label={`Put ${album.title} by ${album.artist} on the main shelf`}
+                    onClick={(event) => pullUp(album, event.currentTarget)}
+                    // Front sleeve on top: stacking order comes from the slot index.
+                    style={{ '--z': String(albums.length - index) } as CSSProperties}
+                  >
+                    <img
+                      className="shelf__cover"
+                      src={album.cover}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </button>
+                </li>
+              ))}
+          </ul>
+        </div>
 
         <div className="records__flights" ref={layerRef} aria-hidden="true">
           {flights.map((flight) => (

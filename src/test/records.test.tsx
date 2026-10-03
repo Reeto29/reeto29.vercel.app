@@ -154,6 +154,33 @@ describe('record shelf', () => {
     expect(container.querySelector('.deck__idle')?.textContent).toMatch(/nothing on the deck/i);
   });
 
+  it('keeps an empty deck on the page before anything is played', () => {
+    const { container } = render(<RecordShelf />);
+
+    // The turntable is a fixture, not something that appears on demand: the
+    // platter is drawn with nothing on it so the layout does not shift when a
+    // record arrives.
+    expect(container.querySelector('.deck[data-empty="true"]')).not.toBeNull();
+    expect(container.querySelector('.deck__platter--empty')).not.toBeNull();
+    expect(container.querySelector('.deck__idle')?.textContent).toMatch(/nothing on the deck/i);
+    expect(container.querySelector('audio')).toBeNull();
+  });
+
+  it('puts the deck beside the shelves rather than above them', () => {
+    const layoutCss = readFileSync(
+      resolve(process.cwd(), 'src/components/RecordShelf.css'),
+      'utf8',
+    );
+
+    // Two columns with the deck pinned to the first, so it reads as part of the
+    // furniture rather than a banner over the records.
+    expect(layoutCss).toMatch(
+      /\.records__layout\s*\{[^}]*grid-template-columns:\s*15rem minmax\(0, 1fr\)/,
+    );
+    expect(layoutCss).toMatch(/\.records__layout > \.deck\s*\{[^}]*grid-column:\s*1/);
+    expect(layoutCss).toMatch(/\.records__layout > \.rails,[^}]*grid-column:\s*2/);
+  });
+
   it('builds the rails from the configured rows and columns', () => {
     const { container } = render(<RecordShelf />);
 

@@ -16,8 +16,30 @@
   gap: 1.5rem;
 }
 
-.deck--empty {
-  min-height: 9rem;
+/*
+  The empty deck keeps the platter and simply draws no record on it, so the turntable
+  is there from the first paint and putting a record on it does not reflow the
+  shelves beside it.
+*/
+.deck[data-empty='true'] {
+  align-items: center;
+}
+
+.deck__platter--empty {
+  background: radial-gradient(circle at 50% 50%, #131417 0 30%, #0c0d0f 30% 100%);
+  cursor: default;
+}
+
+/* The bare spindle: the record is what is missing, not the turntable. */
+.deck__spindle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 12%);
 }
 
 .deck__idle {
