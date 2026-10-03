@@ -215,31 +215,29 @@ describe('record shelf', () => {
     expect(deckTitle(container)).toBeNull();
   });
 
-  it('pulls a record off the bottom shelf, trading with the front of the queue', async () => {
+  it('pulls a record off the bottom shelf onto the front of the queue, bumping the last one down', async () => {
     const user = userEvent.setup();
     const { container } = render(<RecordShelf />);
 
     const before = onBottom(container).length;
-    const front = onQueue(container)[0];
-    const tail = onQueue(container).at(-1);
-    if (front === undefined || tail === undefined) throw new Error('expected a full queue');
+    const last = onQueue(container).at(-1);
+    if (last === undefined) throw new Error('expected a full queue');
 
     const spare = spareFromBottom(container);
     await user.click(buttonFor(container, spare));
     advance(shelf.flightMs + 100);
 
-    // The queue is full, so this is a trade with the record at the front: the spare
-    // arrives and the front record is the one that goes down, not the last one.
+    // The queue is already full, so this is a swap of ends: the spare arrives at
+    // the front and the record that had been there longest falls to the bottom.
     expect(onQueue(container)[0]).toBe(spare);
     expect(onQueue(container)).toHaveLength(displayCapacity);
-    expect(onQueue(container)).not.toContain(front);
-    expect(onQueue(container)).toContain(tail);
-    expect(onBottom(container)).toContain(front);
+    expect(onQueue(container)).not.toContain(last);
+    expect(onBottom(container)).toContain(last);
     expect(onBottom(container)).toHaveLength(before);
     expect(onDeck(container)).toBeNull();
   });
 
-  it('fills an empty queue slot without displacing anything', async () => {
+  it('fills an empty queue slot without bumping anything', async () => {
     const user = userEvent.setup();
     const { container } = render(<RecordShelf />);
 

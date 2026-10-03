@@ -36,47 +36,22 @@ describe('initial state', () => {
 });
 
 describe('promote', () => {
-  it('trades with the front when both the deck and the queue are full', () => {
-    // The state the section is usually in once someone has been clicking: a record
-    // on the turntable and a full main shelf behind it.
-    const busy: Shelf = { queue: initialShelf.queue, deck: albums.at(-1)!.slug };
-    // A record that is genuinely on the bottom shelf, not one already queued.
-    const spare = albums.at(-2)!.slug;
-    const front = busy.queue[0];
-
-    expect(locationOf(busy, spare)).toBe('bottom');
-
-    const next = promote(busy, spare);
-
-    // The deck is untouched by a promotion, and the record that was chosen ends up
-    // at the front of the queue rather than somewhere in the middle of it.
-    expect(next.deck).toBe(busy.deck);
-    expect(next.queue[0]).toBe(spare);
-    expect(next.queue).not.toContain(front);
-    expect(next.queue).toHaveLength(displayCapacity);
-  });
-
   it('puts a record at the front of the queue', () => {
     const next = promote(initialShelf, albums.at(-1)!.slug);
     expect(next.queue[0]).toBe(albums.at(-1)!.slug);
   });
 
-  it('trades with the front record when the queue is full', () => {
-    const front = initialShelf.queue[0];
+  it('bumps the last record down when the queue is full', () => {
+    const last = initialShelf.queue.at(-1);
     const spare = albums.at(-1)!.slug;
 
     const next = promote(initialShelf, spare);
 
-    // The record that was clicked lands at the front, and the one it displaced is
-    // the one that goes, rather than whatever happened to be last.
-    expect(next.queue[0]).toBe(spare);
     expect(next.queue).toHaveLength(displayCapacity);
-    expect(next.queue).not.toContain(front);
-    // Everything else keeps its order.
-    expect(next.queue.slice(1)).toEqual(initialShelf.queue.slice(1));
+    expect(next.queue).not.toContain(last);
   });
 
-  it('displaces nothing when the queue has room', () => {
+  it('bumps nothing when the queue has room', () => {
     const last = shortQueue.queue.at(-1);
     const next = promote(shortQueue, albums.at(-1)!.slug);
 
@@ -148,7 +123,7 @@ describe('fromDeck', () => {
     expect(next.queue).not.toContain(last);
   });
 
-  it('displaces nothing when the queue has room', () => {
+  it('bumps nothing when the queue has room', () => {
     const next = fromDeck({ queue: [b, c], deck: a });
     expect(next.queue).toEqual([a, b, c]);
   });

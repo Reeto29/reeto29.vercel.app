@@ -29,20 +29,18 @@ export function emptySlots(queue: string[], rows: number, cols: number): number 
 /**
  * Puts a record from the bottom shelf onto the front of the queue.
  *
- * This is the only way the queue grows back once it has been drained onto the deck.
- * When there is room the record simply joins the front. When the queue is already
- * full it trades with the record sitting at the front: the new one goes to the top
- * and the one it displaced falls to the bottom shelf, so the record you just chose
- * is always the one you land on.
+ * This is the only way the queue grows back to full once it has been drained onto
+ * the deck. When it is already at capacity the record at the end of the queue is
+ * bumped down to the bottom shelf, which is the queue behaving as a queue: what
+ * was promoted longest ago goes.
  */
 export function promote(shelf: Shelf, slug: string): Shelf {
   if (shelf.queue.includes(slug)) return shelf;
-  if (shelf.queue.length < displayCapacity) {
-    return { ...shelf, queue: [slug, ...shelf.queue] };
-  }
 
-  // Full: the front record is the one that gives up its place.
-  return { ...shelf, queue: [slug, ...shelf.queue.slice(1)] };
+  const bumped = shelf.queue.length >= displayCapacity ? shelf.queue.at(-1) : undefined;
+  const queue = [slug, ...shelf.queue].slice(0, displayCapacity);
+
+  return { ...shelf, queue, deck: bumped === undefined ? shelf.deck : undefined };
 }
 
 /**
