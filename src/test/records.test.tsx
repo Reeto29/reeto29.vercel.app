@@ -237,20 +237,22 @@ describe('record shelf', () => {
     expect(onDeck(container)).toBeNull();
   });
 
-  it('draws no tonearm on an empty deck', () => {
+  it('parks the tonearm on an empty deck, waiting to be cued', () => {
     const { container } = render(<RecordShelf />);
 
-    // There is no needle hanging over an empty platter. The arm belongs to the
-    // record, not to the furniture, so it appears only once something is on the deck.
-    expect(container.querySelector('.deck__arm')).toBeNull();
+    // The needle belongs to the turntable, not to the record: it is drawn from the
+    // first paint and sitting at its rest angle until a record is put down.
+    const arm = container.querySelector('.deck__arm');
+    expect(arm).not.toBeNull();
+    expect(arm?.getAttribute('data-cued')).toBeNull();
   });
 
-  it('draws exactly one tonearm once a record is loaded', () => {
+  it('draws exactly one tonearm before and after a record is loaded', () => {
     const { container } = render(<RecordShelf />);
 
     // A turntable has one arm. Two were shipped once because a stale copy survived
     // a refactor, which is invisible to any test that only checks an arm exists.
-    expect(container.querySelectorAll('.deck__arm')).toHaveLength(0);
+    expect(container.querySelectorAll('.deck__arm')).toHaveLength(1);
 
     fireEvent.click(buttonFor(container, onQueue(container)[0]));
 

@@ -88,12 +88,30 @@ export function Deck({
     The platter is rendered whether or not a record is on it, so the deck keeps
     its place in the layout and putting a record on it does not shove the shelves
     sideways. Only the label, the caption, and the audio element come and go.
+
+    The tonearm goes inside whichever platter is showing, so it is part of the
+    turntable rather than part of the record: the needle is parked and waiting from
+    the first paint, and swinging over it is what putting a record down means.
+    Parked covers both an empty deck and the moment a record has just been picked,
+    before the arm swings the rest of the way onto it.
   */
+  const arm = (
+    <span
+      className="deck__arm"
+      data-cued={album !== undefined && spinning && !returning ? 'true' : undefined}
+      aria-hidden="true"
+    >
+      <span className="deck__arm-rod" />
+      <span className="deck__arm-head" />
+    </span>
+  );
+
   return (
     <div className="deck" data-empty={album === undefined ? 'true' : undefined}>
       {album === undefined ? (
         <span className="deck__platter deck__platter--empty">
           <span className="deck__spindle" aria-hidden="true" />
+          {arm}
           <span className="visually-hidden">the turntable is empty</span>
         </span>
       ) : (
@@ -113,23 +131,7 @@ export function Deck({
             <img className="deck__label" src={album.cover} alt="" width={600} height={600} />
           </span>
 
-          {/*
-            The tonearm lives inside the platter button, so it exists only when there
-            is a record to cue onto. An empty deck is a bare platter and a spindle, and
-            there is no needle hanging over nothing.
-
-            Parked means mid-return: a record that has just been picked sends the arm
-            back before it swings down onto it. It is aria-hidden because what it
-            conveys is already in the caption beside the platter.
-          */}
-          <span
-            className="deck__arm"
-            data-cued={spinning && !returning ? 'true' : undefined}
-            aria-hidden="true"
-          >
-            <span className="deck__arm-rod" />
-            <span className="deck__arm-head" />
-          </span>
+          {arm}
 
           <span className="visually-hidden">
             Put {album.title} by {album.artist} back on the main shelf
