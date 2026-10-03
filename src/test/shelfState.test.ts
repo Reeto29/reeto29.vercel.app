@@ -63,9 +63,17 @@ describe('promote', () => {
     expect(promote(initialShelf, a)).toBe(initialShelf);
   });
 
-  it('leaves the deck alone', () => {
+  it('leaves the deck alone when the queue has room', () => {
     const withDeck: Shelf = { queue: [a, b], deck: c };
     expect(promote(withDeck, d).deck).toBe(c);
+  });
+
+  it('leaves the deck alone when the queue is full', () => {
+    // Promotion moves a record between the bottom shelf and the queue. It has no
+    // business touching the turntable, which is a separate place entirely.
+    const busy: Shelf = { queue: initialShelf.queue, deck: c };
+
+    expect(promote(busy, albums.at(-1)!.slug).deck).toBe(c);
   });
 });
 

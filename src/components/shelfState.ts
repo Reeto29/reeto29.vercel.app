@@ -29,18 +29,19 @@ export function emptySlots(queue: string[], rows: number, cols: number): number 
 /**
  * Puts a record from the bottom shelf onto the front of the queue.
  *
- * This is the only way the queue grows back to full once it has been drained onto
- * the deck. When it is already at capacity the record at the end of the queue is
- * bumped down to the bottom shelf, which is the queue behaving as a queue: what
- * was promoted longest ago goes.
+ * This is the only way the queue grows back once it has been drained onto the deck.
+ * The queue behaves as a queue: the record joining goes to the front, and if the
+ * queue was already full then the record at the end of it is the one that leaves,
+ * since that is the one that has been waiting longest.
+ *
+ * The deck is never touched here. Promotion only moves a record between the bottom
+ * shelf and the queue, so a record already on the turntable keeps playing through it.
  */
 export function promote(shelf: Shelf, slug: string): Shelf {
   if (shelf.queue.includes(slug)) return shelf;
 
-  const bumped = shelf.queue.length >= displayCapacity ? shelf.queue.at(-1) : undefined;
   const queue = [slug, ...shelf.queue].slice(0, displayCapacity);
-
-  return { ...shelf, queue, deck: bumped === undefined ? shelf.deck : undefined };
+  return { ...shelf, queue };
 }
 
 /**
