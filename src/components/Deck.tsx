@@ -91,21 +91,6 @@ export function Deck({
   */
   return (
     <div className="deck" data-empty={album === undefined ? 'true' : undefined}>
-      {/*
-        The tonearm is part of the furniture, so it is drawn whether or not a record
-        is on the platter: parked low and to the right when the deck is empty, swung
-        over the label while a record plays. It is aria-hidden because the state it
-        conveys is already in the caption beside it.
-      */}
-      <span
-        className="deck__arm"
-        data-cued={album !== undefined && spinning && !returning ? 'true' : undefined}
-        aria-hidden="true"
-      >
-        <span className="deck__arm-rod" />
-        <span className="deck__arm-head" />
-      </span>
-
       {album === undefined ? (
         <span className="deck__platter deck__platter--empty">
           <span className="deck__spindle" aria-hidden="true" />
@@ -126,6 +111,24 @@ export function Deck({
         >
           <span className="deck__vinyl" aria-hidden="true">
             <img className="deck__label" src={album.cover} alt="" width={600} height={600} />
+          </span>
+
+          {/*
+            The tonearm lives inside the platter button, so it exists only when there
+            is a record to cue onto. An empty deck is a bare platter and a spindle, and
+            there is no needle hanging over nothing.
+
+            Parked means mid-return: a record that has just been picked sends the arm
+            back before it swings down onto it. It is aria-hidden because what it
+            conveys is already in the caption beside the platter.
+          */}
+          <span
+            className="deck__arm"
+            data-cued={spinning && !returning ? 'true' : undefined}
+            aria-hidden="true"
+          >
+            <span className="deck__arm-rod" />
+            <span className="deck__arm-head" />
           </span>
 
           <span className="visually-hidden">
