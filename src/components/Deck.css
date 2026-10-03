@@ -28,56 +28,59 @@
 /*
   The tonearm.
 
-  Pivoting from the top right corner is what makes it read as a tonearm rather than
-  a line: the rotation moves the needle end across the record and leaves the pivot
-  still, exactly as a real arm swings on its bearing. Cued, it rests over the
-  outer edge of the label where a track starts; uncued it swings back to the right
-  and off the disc.
+  The pivot sits just off the right edge of the platter, partway up, and the rod
+  hangs down from it. Every position is then a rotation about that one point, so
+  the bearing stays still and the needle end is what travels across the record,
+  the way a real arm swings.
 
-  The transition is slow and eased because the movement is the whole point, and it
-  is gated on the same data-spinning the record uses, so the arm only settles once
-  the audio is actually running.
+  Angles are measured from the rod pointing straight down at the pivot:
+
+    82deg  parked, hanging low and to the right, clear of the disc
+    132deg cued, swung left onto the vinyl just outside the label, which is where
+           a needle sits at the start of a track
+
+  The 50 degrees between them is the swing. It reads as an arm because the far end
+  travels a long way while the near end does not move at all.
 */
 .deck__arm {
   position: absolute;
-  top: -6%;
-  right: -4%;
   z-index: 2;
-  display: block;
-  width: 62%;
-  height: 62%;
-  /* Rotate about the pivot at the corner, so the far end is what travels. */
-  transform-origin: 100% 0%;
-  transform: rotate(24deg);
-  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  top: 18%;
+  left: 108%;
+  /* The box runs from the pivot outward; height is zero because the rod is a line. */
+  width: 58%;
+  height: 0;
+  transform-origin: 0 0;
+  transform: rotate(82deg);
+  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
 }
 
 .deck__arm[data-cued='true'] {
-  transform: rotate(-2deg);
+  transform: rotate(132deg);
 }
 
 /* The rod, running from the pivot toward the needle. */
 .deck__arm-rod {
   position: absolute;
-  top: 0;
+  top: -1.5px;
   right: 0;
   left: 0;
   height: 3px;
   border-radius: 2px;
-  background: linear-gradient(90deg, rgb(255 255 255 / 6%), rgb(255 255 255 / 22%));
-  transform-origin: 100% 50%;
+  /* Denser at the pivot end, thinning toward the needle, like a real arm. */
+  background: linear-gradient(270deg, rgb(255 255 255 / 24%), rgb(255 255 255 / 7%));
 }
 
 /* The headshell and needle, at the far end of the rod. */
 .deck__arm-head {
   position: absolute;
-  top: -3px;
-  left: -2px;
-  width: 9px;
-  height: 9px;
+  top: -4px;
+  right: -5px;
+  width: 10px;
+  height: 10px;
   border-radius: 2px;
-  background: rgb(255 255 255 / 26%);
+  background: rgb(255 255 255 / 28%);
   box-shadow: 0 1px 3px rgb(0 0 0 / 70%);
 }
 

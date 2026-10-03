@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -235,6 +235,60 @@ describe('record shelf', () => {
     expect(onBottom(container)).toContain(last);
     expect(onBottom(container)).toHaveLength(before);
     expect(onDeck(container)).toBeNull();
+  });
+
+  it('keeps the tonearm parked on an empty deck', () => {
+    const { container } = render(<RecordShelf />);
+
+    // The arm is part of the turntable rather than part of the record, so it is
+    // drawn from the first paint, parked clear of the platter.
+    const arm = container.querySelector('.deck__arm');
+    expect(arm).not.toBeNull();
+    expect(arm?.getAttribute('data-cued')).toBeNull();
+  });
+
+  it('resets the tonearm when a track is clicked', () => {
+    /*
+      fireEvent rather than userEvent here: the cueing delay is a real setTimeout,
+      so this test needs a faked clock, and userEvent awaits animation frames, which
+      this suite stubs out. A synchronous click sidesteps both.
+    */
+    const clock = vi.useFakeTimers();
+
+    try {
+      const { container } = render(<RecordShelf />);
+
+      fireEvent.click(buttonFor(container, onQueue(container)[0]));
+      expect(container.querySelector('.deck__arm')).not.toBeNull();
+
+      // The arm settles instead of staying caught mid-return.
+      act(() => {
+        clock.advanceTimersByTime(400);
+      });
+      expect(container.querySelector('.deck__arm')).not.toBeNull();
+    } finally {
+      clock.useRealTimers();
+    }
+  });
+
+  it('swings the tonearm about a fixed pivot, parking low and cuing over the label', () => {
+    const deckCss = readFileSync(resolve(process.cwd(), 'src/components/Deck.css'), 'utf8');
+
+    const arm = deckCss.match(/\.deck__arm\s*\{([^}]*)\}/)?.[1] ?? '';
+
+    // One pivot the bearing stays on, so the needle end travels and the near end
+    // does not. That is what reads as an arm rather than a line sliding around.
+    expect(arm).toMatch(/transform-origin:\s*0 0/);
+    // Parked low and to the right of the pivot, clear of the disc.
+    expect(arm).toMatch(/transform:\s*rotate\(82deg\)/);
+    // Cued swung left over the vinyl.
+    expect(deckCss).toMatch(
+      /\.deck__arm\[data-cued='true'\]\s*\{[^}]*transform:\s*rotate\(132deg\)/,
+    );
+
+    // The swing is motion, so reduced motion has to take it away.
+    const reduced = deckCss.slice(deckCss.indexOf('@media (prefers-reduced-motion: reduce)'));
+    expect(reduced).toMatch(/\.deck__arm\s*\{\s*transition:\s*none/);
   });
 
   it('fills an empty queue slot without bumping anything', async () => {

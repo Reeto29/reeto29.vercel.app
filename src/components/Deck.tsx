@@ -29,8 +29,28 @@ export function Deck({
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [spinning, setSpinning] = useState(false);
+  const [returning, setReturning] = useState(false);
 
   const src = album?.previewUrl;
+  const slug = album?.slug;
+
+  /*
+    Cueing. Every record arrives with the arm swinging back to its rest before it
+    comes down over the new one, the way you lift an arm off a record, move it, and
+    set it down again. Without this, swapping one record for another on a turntable
+    that is already playing leaves the arm exactly where it was, so the record
+    changes underneath a needle that never moved.
+
+    The delay is the arm's own travel time, so it lands as the swing finishes rather
+    than cutting it short.
+  */
+  useEffect(() => {
+    if (slug === undefined) return;
+
+    setReturning(true);
+    const settled = window.setTimeout(() => setReturning(false), 380);
+    return () => window.clearTimeout(settled);
+  }, [slug]);
 
   /*
     A new source has to be loaded and played from scratch, and the play() promise
@@ -71,6 +91,21 @@ export function Deck({
   */
   return (
     <div className="deck" data-empty={album === undefined ? 'true' : undefined}>
+      {/*
+        The tonearm is part of the furniture, so it is drawn whether or not a record
+        is on the platter: parked low and to the right when the deck is empty, swung
+        over the label while a record plays. It is aria-hidden because the state it
+        conveys is already in the caption beside it.
+      */}
+      <span
+        className="deck__arm"
+        data-cued={album !== undefined && spinning && !returning ? 'true' : undefined}
+        aria-hidden="true"
+      >
+        <span className="deck__arm-rod" />
+        <span className="deck__arm-head" />
+      </span>
+
       {album === undefined ? (
         <span className="deck__platter deck__platter--empty">
           <span className="deck__spindle" aria-hidden="true" />
