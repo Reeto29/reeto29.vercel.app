@@ -26,17 +26,16 @@ function Entry({ entry }: { entry: ExperienceEntry }) {
           {startYear === endYear ? startYear : `${startYear} – ${endYear}`}
         </span>
         <span className="row__where">{entry.location}</span>
+
+        {/*
+          What the company is and how big it is, sitting under where it is. It reads
+          as part of the header block rather than as another line of work, so the
+          bullets opposite start with what the role was actually about.
+        */}
+        <p className="row__blurb">{entry.blurb}</p>
       </div>
 
       <div className="row__body">
-        {/*
-            What the company is and how big it is, before what the work there was.
-            It sits at the top of the body rather than under the company name
-            because that column is 13rem wide and the sentence would wrap to six or
-            seven lines there.
-          */}
-        <p className="row__blurb">{entry.blurb}</p>
-
         <p className="row__desc">{entry.focus}</p>
 
         <ul className="row__notes">

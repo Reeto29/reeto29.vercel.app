@@ -150,12 +150,17 @@
   min-width: 0;
 }
 
+/*
+  The company blurb, in the header column under the location. It runs the full
+  width of that column like .row__where does, so it starts on its own line instead
+  of trying to sit beside the dates.
+*/
 .row__blurb {
-  color: var(--t-secondary);
-  font-size: 14px;
-  line-height: 1.55;
-  margin-bottom: 0.5rem;
-  max-width: 46em;
+  width: 100%;
+  margin-top: 0.25rem;
+  color: var(--t-meta);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .row__desc {

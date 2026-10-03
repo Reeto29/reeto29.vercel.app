@@ -104,17 +104,29 @@ describe('App', () => {
   it('gives every company a blurb carrying a figure for its size', () => {
     const { container } = render(<App />);
 
-    const blurbs = [...container.querySelectorAll('#work .row__blurb')];
-    expect(blurbs).toHaveLength(experience.length);
+    const rows = [...container.querySelectorAll('#work .rows > .row')];
+    expect(rows).toHaveLength(experience.length);
 
-    for (const blurb of blurbs) {
-      const text = blurb.textContent ?? '';
+    for (const row of rows) {
+      const blurb = row.querySelector('.row__blurb');
+      const text = blurb?.textContent ?? '';
 
       // A sentence about what the company is, with something countable in it, so
       // a reader knows the scale before reading a word about the work.
       expect(text.trim().length).toBeGreaterThan(40);
       expect(text, `no figure in: ${text}`).toMatch(/\d/);
       expect(text.endsWith('.')).toBe(true);
+
+      // It belongs to the header block, under the company and its location, and
+      // not to the body where the work itself is described.
+      expect(blurb?.closest('.row__meta')).not.toBeNull();
+      expect(blurb?.closest('.row__body')).toBeNull();
+
+      const meta = blurb?.closest('.row__meta');
+      const kids = [...(meta?.children ?? [])];
+      expect(kids.indexOf(blurb as Element)).toBeGreaterThan(
+        kids.indexOf(row.querySelector('.row__where') as Element),
+      );
     }
   });
 
