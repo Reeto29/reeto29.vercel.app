@@ -1,6 +1,8 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
-import { albums, displayCapacity, shelf } from '../records';
+import { albums, shelf } from '../records';
 import type { Album } from '../types';
+import { Deck } from './Deck';
+import { albumAt, fromDeck, initialShelf, promote, toDeck, type Shelf } from './shelfState';
 import './RecordShelf.css';
 
 type Box = { top: number; left: number; width: number; height: number };
@@ -23,62 +25,50 @@ const boxOf = (rect: DOMRect): Box => ({
 const easeOut = (t: number) => 1 - (1 - t) ** 3;
 
 /**
- * Records in a crate, with two display rails above them.
+ * The record shelf: a main shelf, a turntable, and a bottom shelf.
  *
- * The crate holds everything, filed spine out. Clicking a record lifts it onto a
- * rail at the front; once the rails are full the record at the end of the queue
- * drops back down into the crate. Clicking a record already on a rail makes it
- * the one playing, and clicking the one playing puts it back in the crate.
+ * The main shelf is a queue of six slots. Clicking a record there puts it on the
+ * turntable, where it spins and plays a thirty second preview; clicking a record on
+ * the turntable puts it back at the front of the queue, bumping the last one down
+ * when the queue is full. The bottom shelf holds everything else, stacked like a
+ * crate of LPs, and clicking one promotes it onto the queue the same way.
  *
- * The flight is one rAF loop writing transforms to a fixed overlay layer. State
- * commits immediately, so what is displayed and what is playing are never wrong
- * while an animation is still running; the overlay is decoration on top of that.
- * Under reduced motion the overlay is skipped and the state change is the effect.
+ * Swapping two records on the main shelf is a trade rather than a bump: the record
+ * you click goes to the turntable and whatever was there takes its slot, so the
+ * queue keeps its shape.
+ *
+ * The flight between any two of those places is one rAF loop writing transforms to
+ * a fixed overlay layer. State commits immediately, so what is shown and what is on
+ * the turntable are never wrong while an animation is still running; the overlay is
+ * decoration on top of that. Under reduced motion the overlay is skipped and the
+ * state change is the effect.
  */
 export function RecordShelf() {
-  const [displayed, setDisplayed] = useState<string[]>(() =>
-    albums.slice(0, displayCapacity).map((album) => album.slug),
-  );
-  const [playing, setPlaying] = useState<string | undefined>(undefined);
+  const [state, setState] = useState<Shelf>(initialShelf);
   const [flights, setFlights] = useState<Flight[]>([]);
   const [announcement, setAnnouncement] = useState('');
 
   const layerRef = useRef<HTMLDivElement>(null);
   const flightId = useRef(0);
 
-  const bySlug = new Map(albums.map((album) => [album.slug, album]));
-  const onRails = new Set(displayed);
+  const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const lift = (album: Album, source: HTMLElement) => {
-    // The rails are full: whatever was at the end goes back down to the crate.
-    const dropping = displayed.length >= displayCapacity ? displayed.at(-1) : undefined;
-
-    const next = [album.slug, ...displayed].slice(0, displayCapacity);
-    setDisplayed(next);
-    setPlaying(album.slug);
-    setAnnouncement(
-      `${album.title} by ${album.artist} is playing.${
-        dropping === undefined
-          ? ''
-          : ` ${bySlug.get(dropping)?.title ?? ''} went back in the crate.`
-      }`,
-    );
-
-    if (dropping === undefined) {
+  /**
+   * Starts the overlay for a record leaving `source` and, optionally, another
+   * record leaving its own slot at the same time. A bump moves two records, so
+   * both fly together rather than one jumping after the other.
+   */
+  const fly = (album: Album, source: HTMLElement, leaving?: string) => {
+    if (reducedMotion()) {
       setFlights([]);
       return;
     }
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setFlights([]);
-      return;
-    }
-
-    const outgoing = bySlug.get(dropping);
+    const outbound = leaving === undefined ? undefined : albumAt(leaving);
     const tail =
-      outgoing === undefined
+      outbound === undefined
         ? null
-        : (document.querySelector<HTMLElement>(`[data-slot="${dropping}"]`) ?? null);
+        : (document.querySelector<HTMLElement>(`[data-slot="${leaving}"]`) ?? null);
 
     setFlights([
       {
@@ -87,12 +77,12 @@ export function RecordShelf() {
         from: boxOf(source.getBoundingClientRect()),
         to: null,
       },
-      ...(tail === null || outgoing === undefined
+      ...(tail === null || outbound === undefined
         ? []
         : [
             {
               id: (flightId.current += 1),
-              album: outgoing,
+              album: outbound,
               from: boxOf(tail.getBoundingClientRect()),
               to: null,
             },
@@ -100,23 +90,52 @@ export function RecordShelf() {
     ]);
   };
 
-  const select = (album: Album, source: HTMLElement) => {
-    if (!onRails.has(album.slug)) {
-      lift(album, source);
-      return;
-    }
+  /** A record on the bottom shelf, promoted to the front of the queue. */
+  const pullUp = (album: Album, source: HTMLElement) => {
+    const bumped =
+      state.queue.length >= shelf.displayRows * shelf.displayCols ? state.queue.at(-1) : undefined;
 
-    if (playing === album.slug) {
-      // The one playing goes back in the crate.
-      setDisplayed(displayed.filter((slug) => slug !== album.slug));
-      setPlaying(undefined);
-      setAnnouncement(`${album.title} stopped and went back in the crate.`);
-      setFlights([]);
-      return;
-    }
+    setState(promote(state, album.slug));
+    setAnnouncement(
+      `${album.title} by ${album.artist} is on the main shelf.${
+        bumped === undefined ? '' : ` ${albumAt(bumped)?.title ?? ''} went to the bottom shelf.`
+      }`,
+    );
+    fly(album, source, bumped);
+  };
 
-    setPlaying(album.slug);
-    setAnnouncement(`${album.title} by ${album.artist} is playing.`);
+  /**
+   * A record on the main shelf, put on the turntable.
+   *
+   * Whatever the deck was holding takes the slot this record came from, which is
+   * the swap: the queue keeps its length and only one sleeve changes hands.
+   */
+  const putOnDeck = (album: Album, source: HTMLElement, index: number) => {
+    const displaced = state.deck;
+
+    setState(toDeck(state, album.slug, index));
+    setAnnouncement(
+      `${album.title} by ${album.artist} is on the turntable, playing ${album.trackName}.${
+        displaced === undefined
+          ? ''
+          : ` ${albumAt(displaced)?.title ?? ''} took its place on the main shelf.`
+      }`,
+    );
+    fly(album, source);
+  };
+
+  /** The record on the turntable, put back at the front of the queue. */
+  const takeOffDeck = (album: Album, source: HTMLElement) => {
+    const bumped =
+      state.queue.length >= shelf.displayRows * shelf.displayCols ? state.queue.at(-1) : undefined;
+
+    setState(fromDeck(state));
+    setAnnouncement(
+      `${album.title} by ${album.artist} is back on the main shelf.${
+        bumped === undefined ? '' : ` ${albumAt(bumped)?.title ?? ''} went to the bottom shelf.`
+      }`,
+    );
+    fly(album, source, bumped);
   };
 
   /*
@@ -189,14 +208,14 @@ export function RecordShelf() {
   }, [flights]);
 
   const flying = new Set(flights.map((flight) => flight.album.slug));
-  const nowPlaying = playing === undefined ? undefined : bySlug.get(playing);
+  const queued = new Set(state.queue);
+  const onDeck = albumAt(state.deck ?? '');
 
   const sleeveProps = (album: Album, kind: 'rail' | 'crate') => ({
     className: `shelf__sleeve shelf__sleeve--${kind}`,
     'data-slot': album.slug,
     'data-flying': flying.has(album.slug) ? 'true' : undefined,
-    'data-playing': playing === album.slug ? 'true' : undefined,
-    'aria-pressed': playing === album.slug,
+    'data-on-deck': state.deck === album.slug ? 'true' : undefined,
   });
 
   return (
@@ -207,42 +226,39 @@ export function RecordShelf() {
 
       <div className="section__body">
         <p className="records__intro">
-          i listen to a lot of music. these are some of my favorite albums.
+          i listen to a lot of music. these are some of my favorite albums. click one to put it on
+          the turntable.
         </p>
 
-        {/* Only shown once a record has been pulled up: there is no idle state to
-            fill, and nothing here claims anything is playing. */}
-        {nowPlaying !== undefined && (
-          <p className="records__meta">
-            <span className="records__title">{nowPlaying.title}</span>
-            <span className="records__artist">
-              {nowPlaying.artist}, {nowPlaying.year}
-            </span>
-          </p>
-        )}
+        {/*
+          The turntable sits above the shelves so a record has somewhere to land
+          that is not another sleeve.
+        */}
+        <Deck album={onDeck} onLift={(album, source) => takeOffDeck(album, source)} />
 
-        {/* Rails: two rows of slots, newest first, so slot 0 is top left. */}
+        {/*
+          The main shelf: a queue of slots in display order, newest at the front.
+          A slot with nothing in it stays visible so the shelf reads as having a
+          fixed capacity rather than shrinking as records are pulled off it.
+        */}
         <div className="rails">
           {Array.from({ length: shelf.displayRows }, (_, row) => (
-            <ol className="rails__row" key={row} aria-label={`display rail ${row + 1}`}>
+            <ol className="rails__row" key={row} aria-label={`main shelf row ${row + 1}`}>
               {Array.from({ length: shelf.displayCols }, (_, column) => {
-                const slug = displayed[row * shelf.displayCols + column];
-                const album = slug === undefined ? undefined : bySlug.get(slug);
+                const index = row * shelf.displayCols + column;
+                const slug = state.queue[index];
+                const album = slug === undefined ? undefined : albumAt(slug);
 
                 return (
-                  <li className="rails__slot" key={slug ?? `empty-${row}-${column}`}>
+                  <li className="rails__slot" key={slug ?? `empty-${index}`}>
                     {album === undefined ? (
                       <span className="rails__empty" aria-hidden="true" />
                     ) : (
                       <button
                         type="button"
                         {...sleeveProps(album, 'rail')}
-                        aria-label={
-                          playing === album.slug
-                            ? `Stop ${album.title} by ${album.artist} and put it back in the crate`
-                            : `Play ${album.title} by ${album.artist}`
-                        }
-                        onClick={(event) => select(album, event.currentTarget)}
+                        aria-label={`Put ${album.title} by ${album.artist} on the turntable`}
+                        onClick={(event) => putOnDeck(album, event.currentTarget, index)}
                       >
                         <img
                           className="shelf__cover"
@@ -264,23 +280,22 @@ export function RecordShelf() {
         </div>
 
         {/*
-          The crate is the shelf. Every record not on a rail sits face out and
-          stacked the way records sit in a crate of LPs: each sleeve overlaps the
-          one before it, so only a strip of each cover shows and the stack reads as
-          full no matter how many records are in it. A record going up to a rail
-          just leaves the stack and the ones behind it close up, rather than the row
-          leaving a hole. Hovering a sleeve pulls it out of the stack for a preview.
+          The bottom shelf. Every record that is neither on the main shelf nor on
+          the turntable, stacked the way records sit in a crate of LPs: each sleeve
+          overlaps the one before it, so only a strip of each cover shows and the
+          stack reads as full however many records are in it. Hovering a sleeve
+          pulls it out for a preview.
         */}
-        <ul className="crate" aria-label="records in the crate">
+        <ul className="crate" aria-label="records on the bottom shelf">
           {albums
-            .filter((album) => !onRails.has(album.slug))
+            .filter((album) => !queued.has(album.slug) && state.deck !== album.slug)
             .map((album, index) => (
               <li className="crate__slot" key={album.slug}>
                 <button
                   type="button"
                   {...sleeveProps(album, 'crate')}
-                  aria-label={`Put ${album.title} by ${album.artist} on a rail and play it`}
-                  onClick={(event) => lift(album, event.currentTarget)}
+                  aria-label={`Put ${album.title} by ${album.artist} on the main shelf`}
+                  onClick={(event) => pullUp(album, event.currentTarget)}
                   // Front sleeve on top: stacking order comes from the slot index.
                   style={{ '--z': String(albums.length - index) } as CSSProperties}
                 >

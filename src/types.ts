@@ -48,4 +48,20 @@ export type Album = {
   year: number;
   /** Path to the front cover in `public/albums/`. */
   cover: string;
+  /**
+   * Title of the one track this record plays, chosen by hand rather than taken
+   * from whichever track Apple happens to list first.
+   */
+  trackName: string;
+  /**
+   * Apple's 30 second preview clip for that track, on Apple's CDN.
+   *
+   * Verified against the Canadian storefront for every record: each album's own
+   * track list was looked up and matched on collection name, so a preview can
+   * never belong to the wrong record. The Canadian store is the one that carries
+   * the region-locked releases (Freudian, The Lo-Fis) the US storefront omits.
+   */
+  previewUrl: string;
+  /** Apple Music page for the track, offered as a way out to the full album. */
+  link: string;
 };

@@ -19,6 +19,10 @@ export const albums: Album[] = [
     artist: 'Brent Faiyaz',
     year: 2021,
     cover: '/albums/sonder-son.jpg',
+    trackName: 'Stay Down',
+    previewUrl:
+      'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/d7/f3/b4/d7f3b4d7-9201-9644-f160-0bd536637cc0/mzaf_1826870790552813855.plus.aac.p.m4a',
+    link: 'https://music.apple.com/ca/album/stay-down/1287758285?i=1287758652&uo=4',
   },
   {
     slug: 'into',
@@ -26,13 +30,21 @@ export const albums: Album[] = [
     artist: 'Sonder',
     year: 2017,
     cover: '/albums/into.jpg',
+    trackName: 'Searchin',
+    previewUrl:
+      'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/08/1c/a1/081ca17f-548c-7522-4f4e-b57416807c45/mzaf_14981405246512816413.plus.aac.p.m4a',
+    link: 'https://music.apple.com/ca/album/searchin/1236828998?i=1236829685&uo=4',
   },
   {
     slug: 'pnd1',
-    title: 'PARTYNEXTDOOR 1',
+    title: 'PARTYNEXTDOOR',
     artist: 'PARTYNEXTDOOR',
-    year: 2014,
+    year: 2013,
     cover: '/albums/pnd1.jpg',
+    trackName: 'Right Now',
+    previewUrl:
+      'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/49/8f/52/498f528e-b268-1a80-ce2a-ca91c86ac516/mzaf_12202456062328802935.plus.aac.p.m4a',
+    link: 'https://music.apple.com/ca/album/right-now/1662160908?i=1662160912&uo=4',
   },
   {
     slug: 'pnd2',
@@ -40,6 +52,10 @@ export const albums: Album[] = [
     artist: 'PARTYNEXTDOOR',
     year: 2014,
     cover: '/albums/pnd2.jpg',
+    trackName: 'FWU',
+    previewUrl:
+      'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/c6/a5/a1/c6a5a179-87fd-0815-be3b-7d954960b29c/mzaf_16967879037635845373.plus.aac.p.m4a',
+    link: 'https://music.apple.com/ca/album/fwu/1662164512?i=1662164520&uo=4',
   },
   {
     slug: 'swimming',
@@ -47,6 +63,10 @@ export const albums: Album[] = [
     artist: 'Mac Miller',
     year: 2018,
     cover: '/albums/swimming.jpg',
+    trackName: 'Self Care',
+    previewUrl:
+      'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/54/df/a2/54dfa2fe-38f3-bb0f-dbf9-8171475110ee/mzaf_9760428484907124190.plus.aac.p.m4a',
+    link: 'https://music.apple.com/ca/album/self-care/1408996052?i=1408996057&uo=4',
   },
   {
     slug: 'nwts',
@@ -54,6 +74,10 @@ export const albums: Album[] = [
     artist: 'Drake',
     year: 2014,
     cover: '/albums/nwts.jpg',
+    trackName: 'From Time (feat. Jhene Aiko)',
+    previewUrl:
+      'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/91/eb/05/91eb05fc-fc69-d9bd-21f6-301d5836fe70/mzaf_16035053226100838608.plus.aac.p.m4a',
+    link: 'https://music.apple.com/ca/album/from-time-feat-jhene-aiko/1440829462?i=1440829626&uo=4',
   },
   {
     slug: 'trapsoul',
@@ -61,6 +85,10 @@ export const albums: Album[] = [
     artist: 'Bryson Tiller',
     year: 2015,
     cover: '/albums/trapsoul.jpg',
+    trackName: 'Exchange',
+    previewUrl:
+      'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/b9/8a/d6/b98ad678-7232-33b7-e8eb-ae49a45ebde8/mzaf_12583855183493364089.plus.aac.p.m4a',
+    link: 'https://music.apple.com/ca/album/exchange/1532924004?i=1532924234&uo=4',
   },
   {
     slug: 'nahwc',
@@ -68,6 +96,10 @@ export const albums: Album[] = [
     artist: 'Metro Boomin',
     year: 2016,
     cover: '/albums/nahwc.jpg',
+    trackName: 'Only 1 (Interlude) [feat. Travis Scott]',
+    previewUrl:
+      'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/b6/4f/49/b64f490a-eee7-541e-4021-995703da7f28/mzaf_8724686883620569162.plus.aac.p.m4a',
+    link: 'https://music.apple.com/ca/album/only-1-interlude-feat-travis-scott/1441388123?i=1441388364&uo=4',
   },
   {
     slug: 'never-enough',
@@ -75,6 +107,10 @@ export const albums: Album[] = [
     artist: 'Daniel Caesar',
     year: 2023,
     cover: '/albums/never-enough.jpg',
+    trackName: 'Toronto 2014',
+    previewUrl:
+      'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/19/b6/4e/19b64ec2-5955-b069-de51-22bff9406b1a/mzaf_15261876396802691284.plus.aac.p.m4a',
+    link: 'https://music.apple.com/ca/album/toronto-2014/1681322859?i=1681322863&uo=4',
   },
   {
     slug: 'freudian',
@@ -82,6 +118,10 @@ export const albums: Album[] = [
     artist: 'Daniel Caesar',
     year: 2018,
     cover: '/albums/freudian.jpg',
+    trackName: 'Transform (feat. Charlotte Day Wilson)',
+    previewUrl:
+      'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/12/82/4b/12824bb3-0045-356d-98cc-0d516ecd6121/mzaf_4685624648406533826.plus.aac.p.m4a',
+    link: 'https://music.apple.com/ca/album/transform-feat-charlotte-day-wilson/1799080774?i=1799080913&uo=4',
   },
   {
     slug: 'the-lo-fis',
@@ -89,6 +129,10 @@ export const albums: Album[] = [
     artist: 'Steve Lacy',
     year: 2020,
     cover: '/albums/the-lo-fis.jpg',
+    trackName: 'Out of Me Head',
+    previewUrl:
+      'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/ce/14/7e/ce147e5c-58d1-e15a-d399-7061e04e04af/mzaf_6711123655898067925.plus.aac.p.m4a',
+    link: 'https://music.apple.com/ca/album/out-of-me-head/1540065822?i=1540066502&uo=4',
   },
   {
     slug: 'forest-hills-drive',
@@ -96,6 +140,10 @@ export const albums: Album[] = [
     artist: 'J. Cole',
     year: 2014,
     cover: '/albums/forest-hills-drive.jpg',
+    trackName: 'Love Yourz',
+    previewUrl:
+      'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/4b/c1/74/4bc17432-6ba9-0ea4-fa84-d6525bbbb5ec/mzaf_3225873646886740243.plus.aac.p.m4a',
+    link: 'https://music.apple.com/ca/album/love-yourz/1600766204?i=1600766450&uo=4',
   },
   {
     slug: '4-your-eyez-only',
@@ -103,6 +151,10 @@ export const albums: Album[] = [
     artist: 'J. Cole',
     year: 2013,
     cover: '/albums/4-your-eyez-only.jpg',
+    trackName: '4 Your Eyez Only',
+    previewUrl:
+      'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/49/a9/3f/49a93fef-070e-25bf-cb88-4ca74b35edbc/mzaf_6277794416083812387.plus.aac.p.m4a',
+    link: 'https://music.apple.com/ca/album/4-your-eyez-only/1440934458?i=1440935262&uo=4',
   },
   {
     slug: 'damn',
@@ -110,6 +162,10 @@ export const albums: Album[] = [
     artist: 'Kendrick Lamar',
     year: 2017,
     cover: '/albums/damn.jpg',
+    trackName: 'LOYALTY. (feat. Rihanna)',
+    previewUrl:
+      'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/88/b4/21/88b42176-068f-63cf-4bd7-4ce048efcfda/mzaf_6858930629601595049.plus.aac.p.m4a',
+    link: 'https://music.apple.com/ca/album/loyalty-feat-rihanna/1440881047?i=1440881570&uo=4',
   },
   {
     slug: 'take-care',
@@ -117,6 +173,10 @@ export const albums: Album[] = [
     artist: 'Drake',
     year: 2011,
     cover: '/albums/take-care.jpg',
+    trackName: "Look What You've Done",
+    previewUrl:
+      'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/6b/e4/45/6be44545-3907-90b1-8beb-d6cca35ce826/mzaf_6522976757940714707.plus.aac.p.m4a',
+    link: 'https://music.apple.com/ca/album/look-what-youve-done/1440642493?i=1440642999&uo=4',
   },
   {
     slug: 'tpab',
@@ -124,6 +184,10 @@ export const albums: Album[] = [
     artist: 'Kendrick Lamar',
     year: 2015,
     cover: '/albums/tpab.jpg',
+    trackName: 'Institutionalized (feat. Bilal, Anna Wise & Snoop Dogg)',
+    previewUrl:
+      'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/d3/b8/12/d3b812d0-0610-af62-114d-b960b5ff7471/mzaf_9470580130824056266.plus.aac.p.m4a',
+    link: 'https://music.apple.com/ca/album/institutionalized-feat-bilal-anna-wise-snoop-dogg/1440828886?i=1440829145&uo=4',
   },
   {
     slug: 'mirage',
@@ -131,29 +195,35 @@ export const albums: Album[] = [
     artist: 'Avenoir',
     year: 2025,
     cover: '/albums/mirage.jpg',
+    trackName: 'Alone',
+    previewUrl:
+      'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/4b/02/cd/4b02cdc3-0b5b-b803-82a7-18a2b9717fad/mzaf_9937627911532951900.plus.aac.p.m4a',
+    link: 'https://music.apple.com/ca/album/alone/1834189535?i=1834189542&uo=4',
   },
 ];
 
 /**
  * Shelf behaviour.
  *
- * Every record lives on the shelf at the bottom until it is displayed. Displaying
- * one lifts it up onto a rail; the rails hold a fixed number, and the record at the
- * end of the queue goes back down to the shelf when a new one goes up.
+ * Records sit in one of three places. The queue is the main shelf, a fixed number
+ * of slots in display order. The deck is the turntable, which holds exactly one
+ * record and plays it. Everything else is in the bottom shelf.
  *
- * Three states per record: on the shelf, on a rail, and playing. Promoting a
- * record from the shelf puts it on a rail at the front. Clicking a record already
- * on a rail makes it the one playing. Clicking the one playing puts it back on the
- * shelf.
+ * Clicking a record in the queue moves it to the deck, and whatever the deck was
+ * holding takes the slot the record came from, so a swap never changes the queue's
+ * length. Clicking the record on the deck returns it to the front of the queue, and
+ * when the queue is already full the record at the end of it falls to the bottom
+ * shelf. Clicking a record in the bottom shelf promotes it the same way, which is
+ * the only way anything ever gets back onto a full queue.
  */
 export const shelf = {
-  /** Rails of slots above the shelf. */
+  /** Rows of slots on the main shelf. */
   displayRows: 2,
-  /** Slots per rail. The product of the two is the display capacity. */
+  /** Slots per row. The product of the two is the queue capacity. */
   displayCols: 3,
-  /** Milliseconds a record spends travelling between the shelf and a rail. */
+  /** Milliseconds a record spends travelling between shelves and the deck. */
   flightMs: 620,
 } as const;
 
-/** Total number of records that can be displayed at once. */
+/** Total number of records the main shelf holds at once. */
 export const displayCapacity = shelf.displayRows * shelf.displayCols;

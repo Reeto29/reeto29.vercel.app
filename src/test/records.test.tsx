@@ -9,18 +9,34 @@ import { SECTION_IDS } from '../content';
 
 const shelfCss = readFileSync(resolve(process.cwd(), 'src/components/RecordShelf.css'), 'utf8');
 
-/** Slugs on the display rails, in slot order. */
-function onRails(container: HTMLElement): string[] {
+/** Slugs on the main shelf, in queue order. */
+function onQueue(container: HTMLElement): string[] {
   return [...container.querySelectorAll<HTMLElement>('.rails__slot .shelf__sleeve')].map(
     (sleeve) => sleeve.dataset.slot ?? '',
   );
 }
 
-/** Slugs filed in the crate, left to right. */
-function inCrate(container: HTMLElement): string[] {
+/** Slugs on the bottom shelf, left to right. */
+function onBottom(container: HTMLElement): string[] {
   return [...container.querySelectorAll<HTMLElement>('.crate__slot .shelf__sleeve')].map(
     (sleeve) => sleeve.dataset.slot ?? '',
   );
+}
+
+/**
+ * The slug of the record on the turntable, if any.
+ *
+ * Read from the cover the platter is showing rather than from a rendered slug,
+ * since that is the only thing the deck puts in the DOM.
+ */
+function onDeck(container: HTMLElement): string | null {
+  const cover = container
+    .querySelector('.deck__label')
+    ?.getAttribute('src')
+    ?.replace('/albums/', '')
+    .replace(/\.jpg$/, '');
+
+  return cover === undefined ? null : cover === '' ? null : cover;
 }
 
 /** The record button for a slug, wherever it currently sits. */
@@ -30,9 +46,9 @@ function buttonFor(container: HTMLElement, slug: string): HTMLElement {
   return button;
 }
 
-/** The album currently described as playing, if any. */
-function nowPlaying(container: HTMLElement): string | null {
-  const title = container.querySelector('.records__title')?.textContent ?? '';
+/** The album described in the deck caption, if any. */
+function deckTitle(container: HTMLElement): string | null {
+  const title = container.querySelector('.deck__track')?.textContent ?? '';
   return title === '' ? null : title;
 }
 
@@ -69,10 +85,10 @@ function advance(milliseconds: number, step = 16) {
   });
 }
 
-/** Lets the crate hold at least one record to click. */
-function spareFromCrate(container: HTMLElement): string {
-  const spare = inCrate(container)[0];
-  if (spare === undefined) throw new Error('the crate is empty, nothing to lift');
+/** Lets the bottom shelf hold at least one record to click. */
+function spareFromBottom(container: HTMLElement): string {
+  const spare = onBottom(container)[0];
+  if (spare === undefined) throw new Error('the bottom shelf is empty, nothing to pull up');
   return spare;
 }
 
@@ -124,7 +140,7 @@ describe('record data', () => {
 });
 
 describe('record shelf', () => {
-  it('labels the section and names both shelves', () => {
+  it('labels the section and names all three places a record can be', () => {
     const { container } = render(<RecordShelf />);
 
     const section = container.querySelector('section#records');
@@ -132,7 +148,10 @@ describe('record shelf', () => {
     expect(section?.getAttribute('aria-labelledby')).toBe('records-heading');
     expect(document.querySelector('#records-heading')).not.toBeNull();
 
-    expect(screen.getByRole('list', { name: /records in the crate/i })).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: /records on the bottom shelf/i })).toBeInTheDocument();
+    // The deck reads as a region so its caption is reachable, not just a div.
+    expect(container.querySelector('.deck')).toBeInTheDocument();
+    expect(container.querySelector('.deck__idle')?.textContent).toMatch(/nothing on the deck/i);
   });
 
   it('builds the rails from the configured rows and columns', () => {
@@ -146,41 +165,69 @@ describe('record shelf', () => {
     }
   });
 
-  it('files every record exactly once, split between rails and crate', () => {
+  it('files every record exactly once across queue, deck, and bottom shelf', () => {
     const { container } = render(<RecordShelf />);
 
-    const everywhere = [...onRails(container), ...inCrate(container)];
+    const deck = onDeck(container);
+    const everywhere = [
+      ...onQueue(container),
+      ...onBottom(container),
+      ...(deck === null ? [] : [deck]),
+    ];
+
     expect(everywhere.sort()).toEqual(albums.map((album) => album.slug).sort());
     expect(new Set(everywhere).size).toBe(everywhere.length);
   });
 
-  it('starts with the rails full and the rest in the crate', () => {
+  it('opens with the queue full, the deck empty, and the rest on the bottom shelf', () => {
     const { container } = render(<RecordShelf />);
 
-    expect(onRails(container)).toHaveLength(displayCapacity);
-    expect(inCrate(container)).toHaveLength(albums.length - displayCapacity);
-    expect(nowPlaying(container)).toBeNull();
+    expect(onQueue(container)).toHaveLength(displayCapacity);
+    expect(onBottom(container)).toHaveLength(albums.length - displayCapacity);
+    expect(onDeck(container)).toBeNull();
+    expect(deckTitle(container)).toBeNull();
   });
 
-  it('takes a record out of the shelf when it goes up, with no gap left behind', async () => {
+  it('pulls a record off the bottom shelf onto the front of the queue, bumping the last one down', async () => {
     const user = userEvent.setup();
     const { container } = render(<RecordShelf />);
 
-    const before = inCrate(container).length;
-    expect(before).toBe(albums.length - displayCapacity);
-    expect(container.querySelectorAll('.crate__gap')).toHaveLength(0);
+    const before = onBottom(container).length;
+    const last = onQueue(container).at(-1);
+    if (last === undefined) throw new Error('expected a full queue');
 
-    const spare = spareFromCrate(container);
+    const spare = spareFromBottom(container);
     await user.click(buttonFor(container, spare));
     advance(shelf.flightMs + 100);
 
-    // The stack is an overlap rather than fixed slots, so a promoted record just
-    // leaves it. The rails are full, so the tail comes back down at the same time
-    // and the stack holds its size instead of leaving a hole.
-    expect(inCrate(container)).not.toContain(spare);
-    expect(inCrate(container)).toHaveLength(before);
-    expect(container.querySelectorAll('.crate__slot')).toHaveLength(before);
-    expect(container.querySelectorAll('.crate__gap')).toHaveLength(0);
+    // The queue is already full, so this is a swap of ends: the spare arrives at
+    // the front and the record that had been there longest falls to the bottom.
+    expect(onQueue(container)[0]).toBe(spare);
+    expect(onQueue(container)).toHaveLength(displayCapacity);
+    expect(onQueue(container)).not.toContain(last);
+    expect(onBottom(container)).toContain(last);
+    expect(onBottom(container)).toHaveLength(before);
+    expect(onDeck(container)).toBeNull();
+  });
+
+  it('fills an empty queue slot without bumping anything', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<RecordShelf />);
+
+    // Drain one slot onto the deck so the queue is no longer full.
+    await user.click(buttonFor(container, onQueue(container)[0]));
+    advance(shelf.flightMs + 100);
+    expect(onQueue(container)).toHaveLength(displayCapacity - 1);
+
+    const last = onQueue(container).at(-1);
+    const spare = spareFromBottom(container);
+    await user.click(buttonFor(container, spare));
+    advance(shelf.flightMs + 100);
+
+    expect(onQueue(container)[0]).toBe(spare);
+    expect(onQueue(container)).toHaveLength(displayCapacity);
+    // Nothing was bumped: the queue had room.
+    expect(onQueue(container)).toContain(last);
   });
 
   it('gives every record a button naming what clicking it does', () => {
@@ -196,42 +243,25 @@ describe('record shelf', () => {
     }
   });
 
-  it('puts a record from the crate onto the front of the rails and plays it', async () => {
+  it('promotes a record from the bottom shelf to the front of the queue', async () => {
     const user = userEvent.setup();
     const { container } = render(<RecordShelf />);
 
-    const spare = spareFromCrate(container);
-    const album = albums.find((candidate) => candidate.slug === spare);
-
+    const spare = spareFromBottom(container);
     await user.click(buttonFor(container, spare));
     advance(shelf.flightMs + 100);
 
-    expect(onRails(container)[0]).toBe(spare);
-    expect(nowPlaying(container)).toBe(album?.title);
-    expect(inCrate(container)).not.toContain(spare);
-  });
-
-  it('sends the record at the end of the queue back down to the crate', async () => {
-    const user = userEvent.setup();
-    const { container } = render(<RecordShelf />);
-
-    // Rails start full, so the first lift has to push something off the end.
-    const tail = onRails(container).at(-1);
-    if (tail === undefined) throw new Error('expected a record on the rails');
-
-    await user.click(buttonFor(container, spareFromCrate(container)));
-    advance(shelf.flightMs + 100);
-
-    expect(onRails(container)).toHaveLength(displayCapacity);
-    expect(onRails(container)).not.toContain(tail);
-    expect(inCrate(container)).toContain(tail);
+    expect(onQueue(container)[0]).toBe(spare);
+    expect(onBottom(container)).not.toContain(spare);
+    // Promotion does not touch the deck; only the queue sleeves do.
+    expect(onDeck(container)).toBeNull();
   });
 
   it('flies the returning record down at the same time as the picked one goes up', async () => {
     const user = userEvent.setup();
     const { container } = render(<RecordShelf />);
 
-    await user.click(buttonFor(container, spareFromCrate(container)));
+    await user.click(buttonFor(container, spareFromBottom(container)));
 
     // Both the lift and the drop are travelling: two overlays, not one.
     expect(container.querySelectorAll('.records__flight')).toHaveLength(2);
@@ -240,51 +270,111 @@ describe('record shelf', () => {
     expect(container.querySelector('.records__flight')).toBeNull();
   });
 
-  it('switches which rail record is playing without moving it', async () => {
+  it('swaps two records: the clicked one takes the deck and the other its slot', async () => {
     const user = userEvent.setup();
     const { container } = render(<RecordShelf />);
 
-    const before = onRails(container);
-    await user.click(buttonFor(container, before[0]));
-    await user.click(buttonFor(container, before[1]));
+    // Fill the deck, then pull two more records off the queue so the queue is
+    // short one and a swap has somewhere to put what the deck gives back.
+    await user.click(buttonFor(container, onQueue(container)[0]));
+    advance(shelf.flightMs + 100);
+    const held = onDeck(container);
+    if (held === null) throw new Error('expected a record on the deck');
+
+    const before = onQueue(container);
+    const target = before[1];
+    await user.click(buttonFor(container, target));
     advance(shelf.flightMs + 100);
 
-    expect(onRails(container)).toEqual(before);
-    expect(nowPlaying(container)).toBe(albums[1].title);
+    const after = onQueue(container);
+    // The record the deck was holding took the clicked slot, so the queue is the
+    // same length and only that one position changed.
+    expect(after).toHaveLength(before.length);
+    expect(after[1]).toBe(held);
+    expect(onDeck(container)).toBe(target);
   });
 
-  it('puts the playing record back in the crate when it is clicked again', async () => {
+  it('returns the record on the deck to the front of the queue when clicked again', async () => {
     const user = userEvent.setup();
     const { container } = render(<RecordShelf />);
 
-    const slug = onRails(container)[0];
-    await user.click(buttonFor(container, slug));
+    const slug = onQueue(container)[0];
     await user.click(buttonFor(container, slug));
     advance(shelf.flightMs + 100);
+    expect(onDeck(container)).not.toBeNull();
 
-    expect(inCrate(container)).toContain(slug);
-    expect(onRails(container)).not.toContain(slug);
-    expect(nowPlaying(container)).toBeNull();
+    await user.click(container.querySelector('.deck__platter') as HTMLElement);
+    advance(shelf.flightMs + 100);
+
+    expect(onQueue(container)[0]).toBe(slug);
+    expect(onDeck(container)).toBeNull();
+    expect(deckTitle(container)).toBeNull();
   });
 
-  it('marks only the playing record', async () => {
+  it('bumps the last record down when the deck goes back onto a full queue', async () => {
     const user = userEvent.setup();
     const { container } = render(<RecordShelf />);
 
-    await user.click(buttonFor(container, onRails(container)[0]));
+    // A single record moves to the deck, leaving the queue one short.
+    const slug = onQueue(container)[0];
+    await user.click(buttonFor(container, slug));
+    advance(shelf.flightMs + 100);
+    expect(onQueue(container)).toHaveLength(displayCapacity - 1);
 
-    const marked = [
-      ...container.querySelectorAll<HTMLElement>('.shelf__sleeve[data-playing="true"]'),
-    ].map((node) => node.dataset.slot);
+    // Two more swaps do not change the queue's length: the deck trades with them.
+    await user.click(buttonFor(container, onQueue(container)[0]));
+    advance(shelf.flightMs + 100);
+    expect(onQueue(container)).toHaveLength(displayCapacity - 1);
 
-    expect(marked).toEqual([onRails(container)[0]]);
+    // Putting it back fills the slot, so nothing is bumped.
+    const tail = onQueue(container).at(-1);
+    await user.click(container.querySelector('.deck__platter') as HTMLElement);
+    advance(shelf.flightMs + 100);
+
+    expect(onQueue(container)).toHaveLength(displayCapacity);
+    expect(onQueue(container)).toContain(tail);
+  });
+
+  it('takes exactly one record off the queue at a time', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<RecordShelf />);
+
+    await user.click(buttonFor(container, onQueue(container)[0]));
+    advance(shelf.flightMs + 100);
+
+    // Only one record lives on the deck; the sleeve that went there is gone from
+    // the queue and does not also appear on the bottom shelf.
+    const deck = onDeck(container);
+    expect(deck).not.toBeNull();
+    expect(onQueue(container)).not.toContain(albums.find((a) => a.cover === deck)?.slug);
+    expect(container.querySelectorAll('.deck__platter')).toHaveLength(1);
+  });
+
+  it('names the track each record plays', () => {
+    for (const album of albums) {
+      expect(album.trackName.trim(), `no track for ${album.slug}`).not.toBe('');
+      expect(album.link).toMatch(/^https:\/\/music\.apple\.com\//);
+    }
+  });
+
+  it('gives every record a preview clip from apple, and no record the same one twice', () => {
+    const clips = new Set<string>();
+
+    for (const album of albums) {
+      expect(album.previewUrl, `no preview for ${album.slug}`).toMatch(
+        /^https:\/\/audio-ssl\.itunes\.apple\.com\/.+\.m4a$/,
+      );
+      // A shared previewUrl would mean two records play the same song.
+      expect(clips.has(album.previewUrl), `duplicate preview: ${album.slug}`).toBe(false);
+      clips.add(album.previewUrl);
+    }
   });
 
   it('is operable from the keyboard alone', async () => {
     const user = userEvent.setup();
     const { container } = render(<RecordShelf />);
 
-    const spare = spareFromCrate(container);
+    const spare = spareFromBottom(container);
     await user.tab();
 
     let guard = 0;
@@ -298,7 +388,7 @@ describe('record shelf', () => {
     await user.keyboard('{Enter}');
     advance(shelf.flightMs + 100);
 
-    expect(onRails(container)[0]).toBe(spare);
+    expect(onQueue(container)[0]).toBe(spare);
   });
 
   it('announces the change for assistive tech', async () => {
@@ -306,20 +396,25 @@ describe('record shelf', () => {
     const { container } = render(<RecordShelf />);
 
     const status = container.querySelector('[role="status"]');
-    const spare = spareFromCrate(container);
+    const spare = spareFromBottom(container);
 
     await user.click(buttonFor(container, spare));
-    expect(status?.textContent).toContain('is playing');
+    expect(status?.textContent).toContain('main shelf');
 
+    // Onto the deck next, naming the track it starts playing.
     await user.click(buttonFor(container, spare));
-    expect(status?.textContent).toContain('crate');
+    expect(status?.textContent).toContain('turntable');
+    expect(status?.textContent).toContain('playing');
+
+    await user.click(container.querySelector('.deck__platter') as HTMLElement);
+    expect(status?.textContent).toContain('back on the main shelf');
   });
 
   it('hides the real record while it is in flight, then reveals it', async () => {
     const user = userEvent.setup();
     const { container } = render(<RecordShelf />);
 
-    const spare = spareFromCrate(container);
+    const spare = spareFromBottom(container);
     await user.click(buttonFor(container, spare));
 
     // Re-query: the record moves from the crate into a rail, so React unmounts
@@ -333,19 +428,18 @@ describe('record shelf', () => {
     expect(container.querySelector('.records__flight')).toBeNull();
   });
 
-  it('names the selected album while it is still in flight', async () => {
+  it('names the track on the deck as soon as it is picked, not once it lands', async () => {
     const user = userEvent.setup();
     const { container } = render(<RecordShelf />);
 
-    const spare = spareFromCrate(container);
-    const album = albums.find((candidate) => candidate.slug === spare);
+    const slug = onQueue(container)[0];
+    const album = albums.find((candidate) => candidate.slug === slug);
 
-    await user.click(buttonFor(container, spare));
+    await user.click(buttonFor(container, slug));
 
-    // Named as soon as it is picked, not once it lands, and with no claim that
-    // anything is playing: it is not.
-    expect(nowPlaying(container)).toBe(album?.title);
-    expect(container.textContent).not.toMatch(/now playing|loading/i);
+    // Named immediately, while the record is still in flight.
+    expect(container.querySelector('.deck__track')?.textContent).toContain(album?.trackName ?? '');
+    expect(container.textContent).not.toMatch(/now playing/i);
 
     advance(shelf.flightMs + 100);
     expect(container.querySelector('.records__flight')).toBeNull();
@@ -369,11 +463,11 @@ describe('record shelf', () => {
     const user = userEvent.setup();
     const { container } = render(<RecordShelf />);
 
-    const spare = spareFromCrate(container);
+    const spare = spareFromBottom(container);
     await user.click(buttonFor(container, spare));
 
     expect(container.querySelector('.records__flight')).toBeNull();
-    expect(onRails(container)[0]).toBe(spare);
+    expect(onQueue(container)[0]).toBe(spare);
   });
 
   it('holds the section copy to the same house style as the rest of the site', () => {
