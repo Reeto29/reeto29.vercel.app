@@ -124,17 +124,6 @@
   font-weight: 500;
 }
 
-.row__title--serif {
-  font-family: var(--font-serif);
-  font-size: 19px;
-  font-style: italic;
-  line-height: 1.3;
-  font-variation-settings:
-    'SOFT' 0,
-    'WONK' 0,
-    'opsz' 24;
-}
-
 .row__org {
   color: var(--t-secondary);
   transition: color 0.15s ease;
@@ -142,10 +131,6 @@
 
 .rows > .row:hover .row__org {
   color: var(--t-primary);
-}
-
-.row__at {
-  color: var(--t-label);
 }
 
 .row__dates {

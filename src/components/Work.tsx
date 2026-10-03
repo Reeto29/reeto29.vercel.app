@@ -9,15 +9,19 @@ function Entry({ entry }: { entry: ExperienceEntry }) {
   return (
     <li className="row">
       <div className="row__meta">
-        <span className="row__title">{entry.role}</span>
-        <span className="row__org">
-          <span className="row__at">@</span>
-          <a className="sweep" href={entry.url} target="_blank" rel="noopener noreferrer">
-            {entry.company}
-            <ExternalArrow className="inline-arrow" />
-            <span className="visually-hidden"> (opens in new tab)</span>
-          </a>
-        </span>
+        {/*
+          Company leads and the role sits under it. Reading the list by employer
+          first is how it is actually scanned, and it gives the linked name the
+          prominence the link deserves.
+        */}
+        <a className="row__title sweep" href={entry.url} target="_blank" rel="noopener noreferrer">
+          {entry.company}
+          <ExternalArrow className="inline-arrow" />
+          <span className="visually-hidden"> (opens in new tab)</span>
+        </a>
+
+        <span className="row__org">{entry.role}</span>
+
         <span className="row__dates">
           {startYear === endYear ? startYear : `${startYear} – ${endYear}`}
         </span>

@@ -74,6 +74,33 @@ describe('App', () => {
     }
   });
 
+  it('leads each work entry with the company and puts the role under it', () => {
+    const { container } = render(<App />);
+
+    // Scoped to the work section: the projects row shares .row__title but is a
+    // plain project name, not a linked employer.
+    const rows = [...container.querySelectorAll('#work .rows > .row')];
+    expect(rows.length).toBeGreaterThan(0);
+
+    for (const row of rows) {
+      const meta = row.querySelector('.row__meta');
+      const title = meta?.querySelector('.row__title');
+      const org = meta?.querySelector('.row__org');
+
+      // The company is the heading and carries the link out; the role sits below it
+      // in the secondary colour. Reading the list by employer is how it gets scanned.
+      expect(title?.tagName).toBe('A');
+      expect(title?.getAttribute('href')).toMatch(/^https:\/\//);
+      expect(org?.tagName).toBe('SPAN');
+      expect(org?.textContent).toMatch(/\S/);
+      expect(org?.querySelector('a')).toBeNull();
+
+      // And the company really does come first in document order.
+      const order = [...(meta?.children ?? [])];
+      expect(order.indexOf(title as Element)).toBeLessThan(order.indexOf(org as Element));
+    }
+  });
+
   it('offers a skip link as the first focusable element', async () => {
     const user = userEvent.setup();
     render(<App />);
