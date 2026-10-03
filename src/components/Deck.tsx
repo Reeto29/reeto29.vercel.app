@@ -146,19 +146,11 @@ export function Deck({
           <>
             <span className="deck__track">
               {album.trackName}
-              <span className="deck__clip">30s preview</span>
+              <span className="deck__clip">preview</span>
             </span>
             <span className="deck__by">
               {album.artist}, {album.year}
             </span>
-            <a
-              className="deck__link sweep"
-              href={album.link}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              hear the whole thing on apple music
-            </a>
           </>
         )}
       </div>

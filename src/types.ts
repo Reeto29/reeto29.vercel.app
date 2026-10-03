@@ -2,6 +2,15 @@ export type Experience = {
   company: string;
   /** Company site the company name links to. */
   url: string;
+  /**
+   * One sentence on what the company actually is, plus a figure for its size.
+   *
+   * Figures are taken from the company's own site, filings, or investor relations
+   * rather than press coverage, and each one was checked against a primary source
+   * when it was written. They drift, so treat them as a snapshot rather than a
+   * standing claim.
+   */
+  blurb: string;
   location: string;
   role: string;
   /** Short phrase naming what the work covered, e.g. "agent infrastructure". */
@@ -62,6 +71,4 @@ export type Album = {
    * the region-locked releases (Freudian, The Lo-Fis) the US storefront omits.
    */
   previewUrl: string;
-  /** Apple Music page for the track, offered as a way out to the full album. */
-  link: string;
 };

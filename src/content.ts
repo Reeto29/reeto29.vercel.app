@@ -51,6 +51,8 @@ export const experience: Experience[] = [
   {
     company: 'Theory Ventures',
     url: 'https://theoryvc.com/',
+    blurb:
+      'early-stage venture capital firm investing $1-40m into software companies, with $688m under management across two funds.',
     location: 'San Francisco, CA',
     role: 'AI Engineer Intern',
     focus: 'async agent tasks, autonomous research',
@@ -67,6 +69,8 @@ export const experience: Experience[] = [
   {
     company: 'Wealthsimple',
     url: 'https://www.wealthsimple.com/en-ca',
+    blurb:
+      'canadian brokerage and bank holding $155.6 billion for 3.6 million clients, as of june 2026.',
     location: 'Toronto, ON',
     role: 'Software Engineer Intern',
     focus: 'product analytics, data quality',
@@ -83,6 +87,8 @@ export const experience: Experience[] = [
   {
     company: 'Toronto Stock Exchange',
     url: 'https://www.tsx.com/',
+    blurb:
+      'operator of the toronto stock exchange and the exchanges around it, with a market capitalisation of ca$14.4 billion.',
     location: 'Toronto, ON',
     role: 'Software Engineer Intern',
     focus: 'market surveillance, query cost',
@@ -98,6 +104,8 @@ export const experience: Experience[] = [
   {
     company: 'Bank of Canada',
     url: 'https://www.bankofcanada.ca/',
+    blurb:
+      'canada\u2019s central bank, running a $240 billion balance sheet and setting the overnight rate.',
     location: 'Ottawa, ON',
     role: 'Software Engineer Intern',
     focus: 'commodities pipelines, applied nlp',
@@ -113,6 +121,8 @@ export const experience: Experience[] = [
   {
     company: 'École de Technologie Supérieure',
     url: 'https://www.etsmtl.ca/',
+    blurb:
+      'applied engineering school in montreal that trains a quarter of every engineer in quebec, with 11,000 students.',
     location: 'Montreal, QC',
     role: 'Research Intern',
     focus: 'high-performance computing, bayesian optimization',
@@ -128,6 +138,7 @@ export const experience: Experience[] = [
   {
     company: 'Ciena Corporation',
     url: 'https://www.ciena.com/',
+    blurb: 'optical networking equipment maker, with $4.8 billion in fiscal 2025 revenue.',
     location: 'Ottawa, ON',
     role: 'Software Engineer Intern',
     focus: 'log triage, internal tooling',
@@ -215,6 +226,26 @@ export const skills: SkillGroup[] = [
       'Ruff',
     ],
   },
+];
+
+/**
+ * Live performance clips, shown under the shelf.
+ *
+ * Thumbnails are self-hosted in `public/videos/` rather than hotlinked, so nothing
+ * reaches YouTube until someone actually presses play.
+ */
+export type Video = {
+  /** YouTube video id, taken from the `youtu.be` link. */
+  id: string;
+  artist: string;
+  venue: string;
+};
+
+export const videos: Video[] = [
+  { id: 'QrR_gm6RqCo', artist: 'Mac Miller', venue: 'NPR Tiny Desk Concert' },
+  { id: 'PBKa-AAy_vo', artist: 'Daniel Caesar', venue: 'NPR Tiny Desk Concert' },
+  { id: 'LTzmjU8aOR4', artist: 'Saba', venue: 'NPR Tiny Desk Concert' },
+  { id: 'l0MqlDbZ_as', artist: 'Aminé', venue: 'NPR Tiny Desk Concert' },
 ];
 
 export const education: Education[] = [

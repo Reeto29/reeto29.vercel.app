@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import App from '../App';
-import { SECTION_IDS, SECTION_LABELS } from '../content';
+import { experience, SECTION_IDS, SECTION_LABELS } from '../content';
 
 beforeEach(() => {
   window.location.hash = '';
@@ -98,6 +98,23 @@ describe('App', () => {
       // And the company really does come first in document order.
       const order = [...(meta?.children ?? [])];
       expect(order.indexOf(title as Element)).toBeLessThan(order.indexOf(org as Element));
+    }
+  });
+
+  it('gives every company a blurb carrying a figure for its size', () => {
+    const { container } = render(<App />);
+
+    const blurbs = [...container.querySelectorAll('#work .row__blurb')];
+    expect(blurbs).toHaveLength(experience.length);
+
+    for (const blurb of blurbs) {
+      const text = blurb.textContent ?? '';
+
+      // A sentence about what the company is, with something countable in it, so
+      // a reader knows the scale before reading a word about the work.
+      expect(text.trim().length).toBeGreaterThan(40);
+      expect(text, `no figure in: ${text}`).toMatch(/\d/);
+      expect(text.endsWith('.')).toBe(true);
     }
   });
 

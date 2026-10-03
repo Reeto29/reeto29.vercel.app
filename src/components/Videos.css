@@ -1,0 +1,145 @@
+/*
+  Live clips.
+
+  A plain two-up grid of thumbnails. No card, no shadow, no border: the thumbnails
+  are already the only saturated thing on the page, and framing them again would
+  fight that. The frame is 16:9 so the grid stays on a rhythm.
+
+  The play affordance is a plain triangle that brightens on hover, so the grid reads
+  as a set of photographs until someone reaches for one.
+*/
+.videos {
+  margin-top: 3.5rem;
+}
+
+.videos__label {
+  margin-bottom: 0.875rem;
+}
+
+.videos__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.75rem 1.5rem;
+}
+
+@media (min-width: 40rem) {
+  .videos__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.videos__frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--bg-subtle);
+}
+
+/* The live player, filling the frame exactly. */
+.videos__embed {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.videos__facade {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.videos__thumb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* The thumbnails are bright next to a near-black page, so they sit back a
+     little and let the grid read as part of the page rather than pasted on. */
+  filter: saturate(0.85) brightness(0.85);
+  transition:
+    filter 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.videos__facade:hover .videos__thumb,
+.videos__facade:focus-visible .videos__thumb {
+  filter: saturate(1) brightness(1);
+}
+
+/*
+  The play button. Centred, and only a little smaller than the thumbnail, so it
+  reads as an affordance rather than as a chip sitting on top of a picture.
+*/
+.videos__play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3rem;
+  height: 3rem;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgb(255 255 255 / 45%);
+  border-radius: 50%;
+  background: rgb(13 14 16 / 55%);
+  backdrop-filter: blur(2px);
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+/* The triangle, drawn with borders so it needs no image. */
+.videos__play::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 52%;
+  transform: translate(-50%, -50%);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 9px solid rgb(255 255 255 / 85%);
+}
+
+.videos__facade:hover .videos__play,
+.videos__facade:focus-visible .videos__play {
+  border-color: rgb(255 255 255 / 80%);
+  background: rgb(13 14 16 / 75%);
+}
+
+.videos__caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.625rem;
+  margin-top: 0.5rem;
+  font-size: 14px;
+}
+
+.videos__artist {
+  color: var(--t-primary);
+  font-weight: 500;
+}
+
+.videos__venue {
+  color: var(--t-label);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--label-track);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .videos__thumb,
+  .videos__play {
+    transition: none;
+  }
+
+  .videos__play {
+    backdrop-filter: none;
+  }
+}

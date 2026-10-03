@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { albums, shelf } from '../records';
 import type { Album } from '../types';
 import { Deck } from './Deck';
+import { Videos } from './Videos';
 import { albumAt, fromDeck, initialShelf, promote, toDeck, type Shelf } from './shelfState';
 import './RecordShelf.css';
 
@@ -313,6 +314,8 @@ export function RecordShelf() {
               ))}
           </ul>
         </div>
+
+        <Videos />
 
         <div className="records__flights" ref={layerRef} aria-hidden="true">
           {flights.map((flight) => (

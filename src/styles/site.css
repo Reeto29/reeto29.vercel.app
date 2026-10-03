@@ -150,6 +150,14 @@
   min-width: 0;
 }
 
+.row__blurb {
+  color: var(--t-secondary);
+  font-size: 14px;
+  line-height: 1.55;
+  margin-bottom: 0.5rem;
+  max-width: 46em;
+}
+
 .row__desc {
   color: var(--t-meta);
   font-size: 14px;

@@ -29,6 +29,14 @@ function Entry({ entry }: { entry: ExperienceEntry }) {
       </div>
 
       <div className="row__body">
+        {/*
+            What the company is and how big it is, before what the work there was.
+            It sits at the top of the body rather than under the company name
+            because that column is 13rem wide and the sentence would wrap to six or
+            seven lines there.
+          */}
+        <p className="row__blurb">{entry.blurb}</p>
+
         <p className="row__desc">{entry.focus}</p>
 
         <ul className="row__notes">

@@ -206,19 +206,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.deck__link {
-  align-self: flex-start;
-  margin-top: 0.25rem;
-  color: var(--t-label);
-  font-size: 13px;
-  transition: color 0.15s ease;
-}
-
-.deck__link:hover,
-.deck__link:focus-visible {
-  color: var(--t-secondary);
-}
-
 @media (max-width: 40rem) {
   .deck {
     gap: 1rem;

@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RecordShelf } from '../components/RecordShelf';
 import { albums, displayCapacity, shelf } from '../records';
 import { SECTION_IDS } from '../content';
+import { videos } from '../content';
 
 const shelfCss = readFileSync(resolve(process.cwd(), 'src/components/RecordShelf.css'), 'utf8');
 
@@ -237,6 +238,53 @@ describe('record shelf', () => {
     expect(onDeck(container)).toBeNull();
   });
 
+  it('lists the live clips without loading a single one from youtube', () => {
+    const { container } = render(<RecordShelf />);
+
+    expect(videos.length).toBe(4);
+    expect(container.querySelectorAll('.videos__item')).toHaveLength(videos.length);
+
+    // Nothing is embedded until it is asked for: no iframes, and no thumbnail
+    // pointing at YouTube's servers either. The static copies live in public/videos.
+    expect(container.querySelector('iframe')).toBeNull();
+    for (const thumb of container.querySelectorAll<HTMLImageElement>('.videos__thumb')) {
+      expect(thumb.getAttribute('src')).toMatch(/^\/videos\/[\w-]+\.jpg$/);
+    }
+  });
+
+  it('points every clip at a thumbnail that exists', () => {
+    for (const video of videos) {
+      expect(
+        existsSync(resolve(process.cwd(), 'public', 'videos', `${video.id}.jpg`)),
+        `missing thumbnail for ${video.id}`,
+      ).toBe(true);
+    }
+  });
+
+  it('swaps a thumbnail for the nocookie player when a clip is played', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<RecordShelf />);
+
+    await user.click(container.querySelector('.videos__facade') as HTMLElement);
+
+    const embed = container.querySelector('iframe');
+    expect(embed).not.toBeNull();
+    // The nocookie domain, so watching a clip does not drop tracking cookies.
+    expect(embed?.getAttribute('src')).toContain('youtube-nocookie.com/embed/');
+    expect(embed?.getAttribute('title')).toMatch(/\S/);
+  });
+
+  it('names the clip on the turntable a preview, not a duration', () => {
+    const { container } = render(<RecordShelf />);
+
+    // The copy is just "preview"; the thirty seconds is an implementation detail
+    // of the clip and the caption does not need to state it. It only appears once
+    // a record is on the deck.
+    fireEvent.click(buttonFor(container, onQueue(container)[0]));
+
+    expect(container.querySelector('.deck__clip')?.textContent).toBe('preview');
+  });
+
   it('parks the tonearm on an empty deck, waiting to be cued', () => {
     const { container } = render(<RecordShelf />);
 
@@ -448,7 +496,6 @@ describe('record shelf', () => {
   it('names the track each record plays', () => {
     for (const album of albums) {
       expect(album.trackName.trim(), `no track for ${album.slug}`).not.toBe('');
-      expect(album.link).toMatch(/^https:\/\/music\.apple\.com\//);
     }
   });
 
