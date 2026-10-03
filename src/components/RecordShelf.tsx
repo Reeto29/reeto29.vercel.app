@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
-import { albums, shelf } from '../records';
+import { albums, displayCapacity, shelf } from '../records';
 import type { Album } from '../types';
 import { Deck } from './Deck';
 import { albumAt, fromDeck, initialShelf, promote, toDeck, type Shelf } from './shelfState';
@@ -89,21 +89,25 @@ export function RecordShelf() {
           ]),
     ]);
   };
-
-  /** A record on the bottom shelf, promoted to the front of the queue. */
+  /**
+   * A record on the bottom shelf, promoted to the front of the queue.
+   *
+   * On a full queue this trades with the record at the front rather than bumping
+   * one off the end, so the record the reader just chose is the one they land on.
+   */
   const pullUp = (album: Album, source: HTMLElement) => {
-    const bumped =
-      state.queue.length >= shelf.displayRows * shelf.displayCols ? state.queue.at(-1) : undefined;
+    const displaced = state.queue.length >= displayCapacity ? state.queue[0] : undefined;
 
     setState(promote(state, album.slug));
     setAnnouncement(
       `${album.title} by ${album.artist} is on the main shelf.${
-        bumped === undefined ? '' : ` ${albumAt(bumped)?.title ?? ''} went to the bottom shelf.`
+        displaced === undefined
+          ? ''
+          : ` ${albumAt(displaced)?.title ?? ''} went to the bottom shelf.`
       }`,
     );
-    fly(album, source, bumped);
+    fly(album, source, displaced);
   };
-
   /**
    * A record on the main shelf, put on the turntable.
    *
@@ -126,8 +130,7 @@ export function RecordShelf() {
 
   /** The record on the turntable, put back at the front of the queue. */
   const takeOffDeck = (album: Album, source: HTMLElement) => {
-    const bumped =
-      state.queue.length >= shelf.displayRows * shelf.displayCols ? state.queue.at(-1) : undefined;
+    const bumped = state.queue.length >= displayCapacity ? state.queue.at(-1) : undefined;
 
     setState(fromDeck(state));
     setAnnouncement(
