@@ -128,17 +128,6 @@ export function Deck({
             <img className="deck__label" src={album.cover} alt="" width={600} height={600} />
           </span>
 
-          {/*
-            The tonearm. It pivots from the corner, so the needle end is what travels
-            across the record. It sits over the vinyl only while a record is actually
-            spinning, which means the arm reads as the cause of the sound rather than
-            as decoration parked on the disc.
-          */}
-          <span className="deck__arm" data-cued={spinning ? 'true' : undefined} aria-hidden="true">
-            <span className="deck__arm-rod" />
-            <span className="deck__arm-head" />
-          </span>
-
           <span className="visually-hidden">
             Put {album.title} by {album.artist} back on the main shelf
           </span>

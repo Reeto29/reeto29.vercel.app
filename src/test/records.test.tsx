@@ -247,6 +247,20 @@ describe('record shelf', () => {
     expect(arm?.getAttribute('data-cued')).toBeNull();
   });
 
+  it('draws exactly one tonearm, with a record loaded and without', async () => {
+    const { container } = render(<RecordShelf />);
+
+    // A turntable has one arm. Two were shipped once because a stale copy inside
+    // the platter button survived a refactor, which is invisible to any test that
+    // only checks the arm exists.
+    expect(container.querySelectorAll('.deck__arm')).toHaveLength(1);
+
+    fireEvent.click(buttonFor(container, onQueue(container)[0]));
+    expect(container.querySelectorAll('.deck__arm')).toHaveLength(1);
+    expect(container.querySelectorAll('.deck__arm-rod')).toHaveLength(1);
+    expect(container.querySelectorAll('.deck__arm-head')).toHaveLength(1);
+  });
+
   it('resets the tonearm when a track is clicked', () => {
     /*
       fireEvent rather than userEvent here: the cueing delay is a real setTimeout,
