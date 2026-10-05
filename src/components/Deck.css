@@ -2,10 +2,9 @@
   The turntable.
 
   A record sits on a platter with the usual centre label and spindle, and turns
-  while its clip plays. The rotation is a plain CSS animation gated on
-  data-spinning rather than a class toggled from the audio events, so the spin and
-  the audio cannot drift out of step: the audio sets the attribute, and the
-  animation runs for as long as it is present.
+  while its clip plays. The rotation is written frame by frame from Deck.tsx, which
+  is what lets it spin up and coast down rather than snapping between still and
+  full speed, so nothing here animates the vinyl.
 
   The label is the album's own cover, which is the one piece of the record that is
   actually on a record, so the platter reads as that album from across the room.
@@ -142,13 +141,7 @@
   inset: 0;
   display: block;
   border-radius: 50%;
-  /* The spindle hole, punched through the label. */
-  animation: deck-spin 1.8s linear infinite;
-  animation-play-state: paused;
-}
-
-.deck__platter[data-spinning='true'] .deck__vinyl {
-  animation-play-state: running;
+  will-change: transform;
 }
 
 .deck__label {
@@ -160,16 +153,6 @@
   transform: translate(-50%, -50%);
   border-radius: 50%;
   object-fit: cover;
-}
-
-@keyframes deck-spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 /* The caption block beside the platter. */
@@ -217,15 +200,11 @@
 }
 
 /*
-  The record stops turning and the arm does not swing. It still plays; only the
-  motion is taken away. The arm jumps straight to whichever end it belongs at,
-  which keeps the state readable without the transition.
+  The arm does not swing. The record still plays; Deck.tsx already leaves it
+  still, and the arm jumps straight to whichever end it belongs at, which keeps the
+  state readable without the transition.
 */
 @media (prefers-reduced-motion: reduce) {
-  .deck__vinyl {
-    animation: none;
-  }
-
   .deck__arm {
     transition: none;
   }

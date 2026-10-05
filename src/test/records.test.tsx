@@ -86,6 +86,12 @@ function advance(milliseconds: number, step = 16) {
   });
 }
 
+/** How far the record on the deck has turned, in degrees. */
+function vinylAngle(container: HTMLElement): number {
+  const transform = container.querySelector<HTMLElement>('.deck__vinyl')?.style.transform ?? '';
+  return Number.parseFloat(transform.match(/rotate\(([-\d.]+)deg\)/)?.[1] ?? '0');
+}
+
 /** Lets the bottom shelf hold at least one record to click. */
 function spareFromBottom(container: HTMLElement): string {
   const spare = onBottom(container)[0];
@@ -331,6 +337,117 @@ describe('record shelf', () => {
     } finally {
       clock.useRealTimers();
     }
+  });
+
+  it('waits for the record to land before it turns', () => {
+    const { container } = render(<RecordShelf />);
+
+    fireEvent.click(buttonFor(container, onQueue(container)[0]));
+    expect(container.querySelector('.deck__platter')).not.toHaveAttribute('data-spinning');
+
+    // Landed: the platter is turning straight away, with no wait on the clip.
+    advance(shelf.flightMs + 50);
+    expect(container.querySelector('.deck__platter')).toHaveAttribute('data-spinning', 'true');
+
+    advance(1000);
+    expect(vinylAngle(container)).toBeGreaterThan(0);
+  });
+
+  it('spins up gradually rather than jumping to full speed', () => {
+    const { container } = render(<RecordShelf />);
+
+    fireEvent.click(buttonFor(container, onQueue(container)[0]));
+    advance(shelf.flightMs + 50);
+
+    // 33 rpm is 200 degrees a second, so a tenth of a second at full speed is 20.
+    advance(100);
+    expect(vinylAngle(container)).toBeGreaterThan(0);
+    expect(vinylAngle(container)).toBeLessThan(20);
+  });
+
+  it('starts the clip once the needle has swung onto the record, not before', () => {
+    const clock = vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const play = vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+    const pause = vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
+
+    try {
+      const { container } = render(<RecordShelf />);
+
+      fireEvent.click(buttonFor(container, onQueue(container)[0]));
+
+      // The click only unlocks the element: started and stopped at once.
+      expect(play).toHaveBeenCalledTimes(1);
+      expect(pause).toHaveBeenCalledTimes(1);
+
+      act(() => {
+        clock.advanceTimersByTime(400);
+      });
+      advance(shelf.flightMs + 50);
+
+      // Landed, and the arm is swinging over, but the needle is not down yet.
+      expect(container.querySelector('.deck__arm')).toHaveAttribute('data-cued', 'true');
+      act(() => {
+        clock.advanceTimersByTime(500);
+      });
+      expect(play).toHaveBeenCalledTimes(1);
+
+      act(() => {
+        clock.advanceTimersByTime(200);
+      });
+      expect(play).toHaveBeenCalledTimes(2);
+    } finally {
+      play.mockRestore();
+      pause.mockRestore();
+      clock.useRealTimers();
+    }
+  });
+
+  it('coasts to a stop and parks the arm when the clip ends', () => {
+    const { container } = render(<RecordShelf />);
+
+    fireEvent.click(buttonFor(container, onQueue(container)[0]));
+    advance(shelf.flightMs + 50);
+    advance(1000);
+
+    fireEvent.ended(container.querySelector('audio') as HTMLAudioElement);
+    expect(container.querySelector('.deck__platter')).not.toHaveAttribute('data-spinning');
+    expect(container.querySelector('.deck__arm')?.getAttribute('data-cued')).toBeNull();
+
+    // Still turning a moment later, then at rest.
+    const atEnd = vinylAngle(container);
+    advance(100);
+    expect(vinylAngle(container)).not.toBe(atEnd);
+
+    advance(5000);
+    const settled = vinylAngle(container);
+    advance(1000);
+    expect(vinylAngle(container)).toBe(settled);
+  });
+
+  it('stops turning when the clip cannot play, instead of spinning silently', () => {
+    const { container } = render(<RecordShelf />);
+
+    fireEvent.click(buttonFor(container, onQueue(container)[0]));
+    advance(shelf.flightMs + 50);
+    fireEvent.error(container.querySelector('audio') as HTMLAudioElement);
+
+    expect(container.querySelector('.deck__platter')).not.toHaveAttribute('data-spinning');
+  });
+
+  it('turns again when a finished record is put back on the deck', () => {
+    const { container } = render(<RecordShelf />);
+
+    const slug = onQueue(container)[0];
+    fireEvent.click(buttonFor(container, slug));
+    advance(shelf.flightMs + 50);
+    fireEvent.ended(container.querySelector('audio') as HTMLAudioElement);
+
+    fireEvent.click(container.querySelector('.deck__platter') as HTMLElement);
+    advance(shelf.flightMs + 50);
+    fireEvent.click(buttonFor(container, slug));
+    advance(shelf.flightMs + 50);
+
+    expect(container.querySelector('.deck__platter')).toHaveAttribute('data-spinning', 'true');
   });
 
   it('swings the tonearm about a fixed pivot, parking low and cuing over the label', () => {
@@ -585,6 +702,68 @@ describe('record shelf', () => {
 
     advance(shelf.flightMs + 100);
     expect(container.querySelector('.records__flight')).toBeNull();
+  });
+
+  it('resizes a flying sleeve to its destination instead of shrinking it away', async () => {
+    // jsdom lays nothing out, so give the crate and the rails their real
+    // proportions: a crate sleeve is smaller than a rail slot.
+    const rect = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        const size = this.closest('.crate') !== null ? 60 : 120;
+        return { top: 0, left: 0, width: size, height: size } as DOMRect;
+      });
+
+    try {
+      const user = userEvent.setup();
+      const { container } = render(<RecordShelf />);
+
+      await user.click(buttonFor(container, spareFromBottom(container)));
+      advance(shelf.flightMs * 0.9);
+
+      const overlay = container.querySelector<HTMLElement>('.records__flight');
+      expect(overlay).not.toBeNull();
+
+      // Close to landing, it is about the size of the rail slot it is filling.
+      expect(Number.parseFloat(overlay?.style.width ?? '')).toBeGreaterThan(110);
+      expect(Number.parseFloat(overlay?.style.height ?? '')).toBeGreaterThan(110);
+      expect(overlay?.style.transform).not.toMatch(/scale/);
+    } finally {
+      rect.mockRestore();
+    }
+  });
+
+  it('shrinks a record onto the centre label as it lands on the turntable', async () => {
+    // The platter is 144px across and its label 49px, as on a desktop.
+    const rect = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        const size = this.classList.contains('deck__platter') ? 144 : 120;
+        return { top: 0, left: 0, width: size, height: size } as DOMRect;
+      });
+    const width = vi
+      .spyOn(HTMLElement.prototype, 'offsetWidth', 'get')
+      .mockImplementation(function (this: HTMLElement) {
+        return this.classList.contains('deck__label') ? 49 : 0;
+      });
+
+    try {
+      const user = userEvent.setup();
+      const { container } = render(<RecordShelf />);
+
+      await user.click(buttonFor(container, onQueue(container)[0]));
+      advance(shelf.flightMs * 0.9);
+
+      const overlay = container.querySelector<HTMLElement>('.records__flight');
+
+      // Nearly down: label sized, centred on the platter, and round.
+      expect(Number.parseFloat(overlay?.style.width ?? '')).toBeLessThan(55);
+      expect(overlay?.style.transform).toMatch(/translate3d\((4[0-9]|50)\./);
+      expect(Number.parseFloat(overlay?.style.borderRadius ?? '')).toBeGreaterThan(45);
+    } finally {
+      rect.mockRestore();
+      width.mockRestore();
+    }
   });
 
   it('skips the flight entirely under reduced motion', async () => {

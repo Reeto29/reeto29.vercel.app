@@ -103,7 +103,7 @@ export function locationOf(shelf: Shelf, slug: string): 'queue' | 'deck' | 'bott
   return 'bottom';
 }
 
-/** Every record, by its current location. Never mutates `albums`. */
+/** Looks up a record by its slug. */
 export function albumAt(slug: string): Album | undefined {
   return albums.find((album) => album.slug === slug);
 }

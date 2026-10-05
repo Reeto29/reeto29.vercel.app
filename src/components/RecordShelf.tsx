@@ -6,7 +6,14 @@ import { Videos } from './Videos';
 import { albumAt, fromDeck, initialShelf, promote, toDeck, type Shelf } from './shelfState';
 import './RecordShelf.css';
 
-type Box = { top: number; left: number; width: number; height: number };
+type Box = {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+  /** The record's centre label on the turntable, which is a circle, not a sleeve. */
+  round: boolean;
+};
 
 type Flight = {
   id: number;
@@ -16,12 +23,33 @@ type Flight = {
   to: Box | null;
 };
 
-const boxOf = (rect: DOMRect): Box => ({
-  top: rect.top,
-  left: rect.left,
-  width: rect.width,
-  height: rect.height,
-});
+/**
+ * Where a sleeve sits on screen. On the turntable that is the centre label rather
+ * than the whole platter: the cover is the label, so a record put on the deck
+ * shrinks down onto it as it lands, and one lifted off grows back out of it.
+ */
+const boxOf = (element: HTMLElement): Box => {
+  const rect = element.getBoundingClientRect();
+  const label = element.querySelector<HTMLElement>('.deck__label');
+
+  if (label === null) {
+    return { top: rect.top, left: rect.left, width: rect.width, height: rect.height, round: false };
+  }
+
+  /*
+    The label turns with the record, and a rotated element's bounding box swells
+    by up to a half at 45 degrees. So the label's own unrotated size is centred on
+    the platter, which never turns, instead of measuring the label directly.
+  */
+  const size = label.offsetWidth;
+  return {
+    top: rect.top + (rect.height - size) / 2,
+    left: rect.left + (rect.width - size) / 2,
+    width: size,
+    height: size,
+    round: true,
+  };
+};
 
 const easeOut = (t: number) => 1 - (1 - t) ** 3;
 
@@ -75,7 +103,7 @@ export function RecordShelf() {
       {
         id: (flightId.current += 1),
         album,
-        from: boxOf(source.getBoundingClientRect()),
+        from: boxOf(source),
         to: null,
       },
       ...(tail === null || outbound === undefined
@@ -84,7 +112,7 @@ export function RecordShelf() {
             {
               id: (flightId.current += 1),
               album: outbound,
-              from: boxOf(tail.getBoundingClientRect()),
+              from: boxOf(tail),
               to: null,
             },
           ]),
@@ -96,7 +124,7 @@ export function RecordShelf() {
     const bumped =
       state.queue.length >= shelf.displayRows * shelf.displayCols ? state.queue.at(-1) : undefined;
 
-    setState(promote(state, album.slug));
+    setState((current) => promote(current, album.slug));
     setAnnouncement(
       `${album.title} by ${album.artist} is on the main shelf.${
         bumped === undefined ? '' : ` ${albumAt(bumped)?.title ?? ''} went to the bottom shelf.`
@@ -114,7 +142,7 @@ export function RecordShelf() {
   const putOnDeck = (album: Album, source: HTMLElement, index: number) => {
     const displaced = state.deck;
 
-    setState(toDeck(state, album.slug, index));
+    setState((current) => toDeck(current, album.slug, index));
     setAnnouncement(
       `${album.title} by ${album.artist} is on the turntable, playing ${album.trackName}.${
         displaced === undefined
@@ -130,7 +158,7 @@ export function RecordShelf() {
     const bumped =
       state.queue.length >= shelf.displayRows * shelf.displayCols ? state.queue.at(-1) : undefined;
 
-    setState(fromDeck(state));
+    setState(fromDeck);
     setAnnouncement(
       `${album.title} by ${album.artist} is back on the main shelf.${
         bumped === undefined ? '' : ` ${albumAt(bumped)?.title ?? ''} went to the bottom shelf.`
@@ -149,11 +177,10 @@ export function RecordShelf() {
     if (layer === null || flights.length === 0) return;
 
     const measured = flights.map((flight) => {
-      const rect = document
-        .querySelector<HTMLElement>(`[data-slot="${flight.album.slug}"]`)
-        ?.getBoundingClientRect();
+      const target = document.querySelector<HTMLElement>(`[data-slot="${flight.album.slug}"]`);
+      const to = target === null ? null : boxOf(target);
 
-      return { ...flight, to: rect !== undefined && rect.width > 0 ? boxOf(rect) : null };
+      return { ...flight, to: to !== null && to.width > 0 ? to : null };
     });
 
     /*
@@ -186,14 +213,17 @@ export function RecordShelf() {
           -Math.sin(Math.PI * eased) *
           Math.min(72, Math.abs(flight.to.top - flight.from.top) * 0.28);
 
-        // Going up into a rail grows the sleeve; coming back down shrinks it.
-        const scale = 1 + (0.08 - 1) * eased;
-
         node.style.transform = `translate3d(${
           flight.from.left + (flight.to.left - flight.from.left) * eased
-        }px, ${
-          flight.from.top + (flight.to.top - flight.from.top) * eased + rise
-        }px, 0) scale(${scale})`;
+        }px, ${flight.from.top + (flight.to.top - flight.from.top) * eased + rise}px, 0)`;
+        // The sleeve takes on the size of wherever it is going, so it lands exactly
+        // over the slot it is filling: up into a rail it grows, down into the crate
+        // it shrinks, and onto the platter it matches the disc.
+        node.style.width = `${flight.from.width + (flight.to.width - flight.from.width) * eased}px`;
+        node.style.height = `${flight.from.height + (flight.to.height - flight.from.height) * eased}px`;
+        // Square sleeve to round label, or back, over the same flight.
+        const roundness = (flight.from.round ? 1 - eased : 0) + (flight.to.round ? eased : 0);
+        node.style.borderRadius = `${2 + roundness * 48}%`;
         node.style.opacity = '1';
       }
 
@@ -237,7 +267,11 @@ export function RecordShelf() {
           so the platter is the thing you meet before the sleeves.
         */}
         <div className="records__layout">
-          <Deck album={onDeck} onLift={(album, source) => takeOffDeck(album, source)} />
+          <Deck
+            album={onDeck}
+            arriving={onDeck !== undefined && flying.has(onDeck.slug)}
+            onLift={(album, source) => takeOffDeck(album, source)}
+          />
 
           {/*
           The main shelf: a queue of slots in display order, newest at the front.
