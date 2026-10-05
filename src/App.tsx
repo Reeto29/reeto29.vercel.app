@@ -48,12 +48,12 @@ export default function App() {
 
       <div className="shell">
         <main id="main" tabIndex={-1}>
-          <RecordShelf />
           <Work />
           <Projects />
           <Skills />
           <Education />
           <Contact />
+          <RecordShelf />
         </main>
 
         <footer className="site-footer">

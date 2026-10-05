@@ -5,12 +5,12 @@ import type { Education, Experience, Project, SkillGroup, SocialLink } from './t
  * link can never point at a section that does not exist.
  */
 export const SECTION_IDS = [
-  'records',
   'work',
   'projects',
   'skills',
   'education',
   'contact',
+  'records',
 ] as const;
 
 export type SectionId = (typeof SECTION_IDS)[number];
