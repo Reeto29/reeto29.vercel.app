@@ -125,31 +125,38 @@ export function ringStep(tile: number, gap: number): number {
 export const RING_SPAN = ((photos.length - 1) / 2) * ringStep(grid.tile, grid.gap);
 
 /**
- * Rotation. The default motion is a slow drift rather than a full spin: taking
- * the ring a full turn about Y takes every tile edge-on twice per cycle, where
- * they collapse to a line and the band disappears. A bounded sway reads the same
- * as a carousel turning but never degenerates.
+ * Rotation. The ring turns one way at a steady speed, forever.
+ *
+ * It is not a full circle: the band covers about a hundred degrees of ring, so
+ * turning it a full revolution would carry every photo off one side and leave
+ * the frame empty, and take each tile edge-on, where it collapses to a line. So
+ * each tile wraps instead. Once it has turned past the end of the band, which is
+ * outside the visible frame and under the edge mask, it is moved one band-width
+ * back to the far end. The band reads as an endless ring, and no tile is ever
+ * turned more than about fifty degrees from the viewer.
  */
 export const spin = {
   /**
-   * Degrees either side of centre for the automatic sway.
+   * Steady speed, in degrees per second.
    *
-   * A little over three ring steps, so the outermost tiles travel a visible arc
-   * while the centre pair stay square to the viewer.
+   * Slow on purpose: a photo takes around half a minute to cross the frame, so the
+   * motion reads as a drift rather than as a carousel on a timer.
    */
-  autoRange: 34,
-  /**
-   * Seconds for one full sway cycle.
-   *
-   * Slow on purpose. The ring turns once every 96 seconds, so a photo crosses the
-   * frame over roughly half a minute and the motion reads as the band breathing
-   * rather than as a carousel on a timer.
-   */
-  autoPeriod: 96,
+  speed: 2,
   /** Degrees added per keyboard press. */
   keyStep: 6,
-  /** Clamp on the manual offset, in degrees. */
-  manualLimit: 52,
-  /** Manual offset drifts back to centre this many times slower than the sway. */
-  recentreRate: 0.35,
+  /** A full-width drag turns the ring this many degrees. */
+  dragRange: 104,
+  /** Cap on how fast a fling can send the ring, in degrees per second. */
+  flingLimit: 60,
+  /**
+   * How quickly a fling settles back to the steady speed, per second. At 1.5 a
+   * fling has mostly worn off within a couple of seconds.
+   */
+  settleRate: 1.5,
 } as const;
+
+/** Degrees of ring one full band covers, and so the distance a tile wraps by. */
+export function bandSpan(step: number): number {
+  return photos.length * step;
+}

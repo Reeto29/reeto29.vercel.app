@@ -1,15 +1,19 @@
 import { useEffect, useRef, type CSSProperties } from 'react';
-import { photos, spin } from '../photos';
+import { bandSpan, grid, photos, ringStep, spin } from '../photos';
 import './PhotoGrid.css';
 
 /**
  * Rotating photo ring behind the masthead.
  *
- * One number drives everything: the ring's rotation, written to a single custom
- * property as `--spin` on the stage and added to each tile's own angle on the
- * cylinder. The default motion is a slow sinusoidal drift; dragging or arrow keys
- * add a manual offset on top, which then drifts back to centre so the ring never
- * gets stuck at an angle the reader did not ask for.
+ * The ring turns one way at a steady speed. Its rotation is one number, written
+ * as `--spin` on the stage and added to each tile's own angle on the cylinder.
+ * The band only covers part of a circle, so each tile also carries a `--wrap`
+ * offset: once a tile has turned past one end of the band, out of sight, it is
+ * moved a whole band-width to the other end, and the ring never runs out.
+ *
+ * Dragging turns the ring directly and a fling carries on with the release speed
+ * before settling back into the steady turn. Arrow keys step it. Nothing pulls it
+ * back to a centre, so it is never fighting the reader or swinging back and forth.
  *
  * The ring is decorative, so it is described in one label rather than per image,
  * and it is keyboard operable because it moves on its own.
@@ -23,47 +27,74 @@ export function PhotoGrid() {
 
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const field = node.querySelector<HTMLElement>('.grid__field');
+    const tiles = [...node.querySelectorAll<HTMLElement>('.grid__tile')];
+    const half = (tiles.length - 1) / 2;
 
-    let manual = 0;
-    let manualVelocity = 0;
-    let elapsed = 0;
+    let angle = 0;
+    let velocity: number = spin.speed;
     let last = 0;
     let frame: number | null = null;
+
+    /*
+      The angle between tiles comes from the stylesheet, which changes it at the
+      phone breakpoint, so it is read back rather than assumed. Without styles
+      (tests, or a stylesheet that failed to load) it falls back to the desktop
+      value the stylesheet is checked against.
+    */
+    let step = ringStep(grid.tile, grid.gap);
+    const readStep = () => {
+      const declared =
+        field === null
+          ? Number.NaN
+          : Number.parseFloat(getComputedStyle(field).getPropertyValue('--step-deg'));
+      step = Number.isFinite(declared) && declared > 0 ? declared : ringStep(grid.tile, grid.gap);
+    };
+
+    const wraps = tiles.map(() => Number.NaN);
 
     const drag = {
       active: false,
       pointerId: -1,
       startX: 0,
       startAngle: 0,
-      lastX: 0,
-      moved: false,
+      lastAngle: 0,
+      lastTime: 0,
     };
 
-    const clampManual = (value: number) =>
-      Math.max(-spin.manualLimit, Math.min(spin.manualLimit, value));
-
-    const totalAngle = () =>
-      spin.autoRange * Math.sin((2 * Math.PI * elapsed) / spin.autoPeriod) + manual;
-
     /*
-      --spin is written to the stage, which every tile inherits and adds to its own
-      ring angle. Writing it to a tile would work too, but the stylesheet must not
-      redeclare the name on the tile: a local declaration outranks an animated one
-      and would silently freeze that tile's motion.
+      --spin goes on the stage, which every tile inherits and adds to its own ring
+      angle. The stylesheet must not redeclare it on the field or a tile: a local
+      declaration outranks an inherited one and would silently freeze the motion.
+
+      --wrap goes on each tile, and is only written when it changes, which is once
+      per tile each time it passes the end of the band.
     */
     const paint = () => {
-      node.style.setProperty('--spin', `${totalAngle().toFixed(2)}deg`);
+      const span = bandSpan(step);
+
+      // Kept within one band either side of zero. The layout repeats every span,
+      // so this changes nothing on screen and stops the number growing forever.
+      angle = ((((angle + span / 2) % span) + span) % span) - span / 2;
+      node.style.setProperty('--spin', `${angle.toFixed(2)}deg`);
+
+      tiles.forEach((tile, index) => {
+        const wrap = span * Math.round(((index - half) * step + angle) / span);
+        if (wrap === wraps[index]) return;
+        wraps[index] = wrap;
+        tile.style.setProperty('--wrap', `${wrap.toFixed(3)}deg`);
+      });
     };
 
     const tick = (now: number) => {
-      const delta = last === 0 ? 0 : (now - last) / 1000;
+      // Clamped so a frame after a background tab does not lurch the ring.
+      const delta = last === 0 ? 0 : Math.min(0.1, Math.max(0, (now - last) / 1000));
       last = now;
-      elapsed += delta;
 
-      // User input wins; the offset eases back once they let go.
-      manual = clampManual(manual + manualVelocity * delta);
-      manualVelocity *= 0.86;
-      manual += (0 - manual) * spin.recentreRate * delta;
+      if (!drag.active) {
+        velocity += (spin.speed - velocity) * Math.min(1, spin.settleRate * delta);
+        angle += velocity * delta;
+      }
 
       paint();
       frame = requestAnimationFrame(tick);
@@ -81,12 +112,8 @@ export function PhotoGrid() {
       frame = null;
     };
 
-    /** Arrow keys and drag both nudge the manual offset. */
-    const nudge = (degrees: number) => {
-      manual = clampManual(manual + degrees);
-      manualVelocity = 0;
-      paint();
-    };
+    // Belt and braces with draggable={false}: nothing in the ring is a drag source.
+    const onDragStart = (event: DragEvent) => event.preventDefault();
 
     const onPointerDown = (event: PointerEvent) => {
       if (event.pointerType === 'mouse' && event.button !== 0) return;
@@ -94,25 +121,30 @@ export function PhotoGrid() {
       drag.active = true;
       drag.pointerId = event.pointerId;
       drag.startX = event.clientX;
-      drag.lastX = event.clientX;
-      drag.startAngle = manual;
-      drag.moved = false;
-      node.setPointerCapture(event.pointerId);
+      drag.startAngle = angle;
+      drag.lastAngle = angle;
+      drag.lastTime = event.timeStamp;
+      velocity = 0;
+      node.setPointerCapture?.(event.pointerId);
     };
 
     const onPointerMove = (event: PointerEvent) => {
       if (!drag.active || drag.pointerId !== event.pointerId) return;
 
-      const dx = event.clientX - drag.startX;
-      if (Math.abs(dx) > 2) drag.moved = true;
+      // Guard the width: dividing by zero yields Infinity, which propagates into
+      // NaN on the next frame.
+      const width = Math.max(node.clientWidth, 1);
+      angle = drag.startAngle + ((event.clientX - drag.startX) / width) * spin.dragRange;
 
-      // A full-width swipe sweeps about a third of the manual range. Guard the
-      // width: dividing by zero yields Infinity, which propagates into NaN on
-      // the next frame.
-      const span = Math.max(node.clientWidth, 1);
-      const next = drag.startAngle + (dx / span) * spin.manualLimit * 2;
-      manualVelocity = ((next - manual) / 60) * 16;
-      manual = clampManual(next);
+      // The release speed is the speed of the last movement, so a fling carries on.
+      const elapsed = (event.timeStamp - drag.lastTime) / 1000;
+      if (elapsed > 0) {
+        const moved = angle - drag.lastAngle;
+        velocity = Math.max(-spin.flingLimit, Math.min(spin.flingLimit, moved / elapsed));
+      }
+      drag.lastAngle = angle;
+      drag.lastTime = event.timeStamp;
+
       paint();
     };
 
@@ -120,25 +152,33 @@ export function PhotoGrid() {
       if (!drag.active || drag.pointerId !== event.pointerId) return;
 
       drag.active = false;
+      // A drag that stopped before letting go should not fling.
+      if (event.timeStamp - drag.lastTime > 80) velocity = 0;
       node.releasePointerCapture?.(event.pointerId);
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
-      const step = event.shiftKey ? spin.keyStep * 2 : spin.keyStep;
+      const keyStep = event.shiftKey ? spin.keyStep * 2 : spin.keyStep;
 
       switch (event.key) {
         case 'ArrowLeft':
-          nudge(step);
+          angle += keyStep;
           break;
         case 'ArrowRight':
-          nudge(-step);
+          angle -= keyStep;
           break;
         default:
           return;
       }
 
+      paint();
       event.preventDefault();
       event.stopPropagation();
+    };
+
+    const onResize = () => {
+      readStep();
+      paint();
     };
 
     node.addEventListener('pointerdown', onPointerDown);
@@ -146,6 +186,8 @@ export function PhotoGrid() {
     node.addEventListener('pointerup', endDrag);
     node.addEventListener('pointercancel', endDrag);
     node.addEventListener('keydown', onKeyDown);
+    node.addEventListener('dragstart', onDragStart);
+    window.addEventListener('resize', onResize);
 
     // Automatic motion is optional; keyboard and drag stay available either way.
     const syncMotion = () => (motion.matches ? stop() : start());
@@ -161,6 +203,7 @@ export function PhotoGrid() {
     // Dragging only makes sense with a fine pointer; on touch it fights scrolling.
     if (finePointer.matches) node.dataset.draggable = 'true';
 
+    readStep();
     paint();
     syncMotion();
 
@@ -173,6 +216,8 @@ export function PhotoGrid() {
       node.removeEventListener('pointerup', endDrag);
       node.removeEventListener('pointercancel', endDrag);
       node.removeEventListener('keydown', onKeyDown);
+      node.removeEventListener('dragstart', onDragStart);
+      window.removeEventListener('resize', onResize);
     };
   }, []);
 
@@ -230,7 +275,17 @@ export function PhotoGrid() {
                   carousel turns. The whole set is needed for the first sweep, so
                   it is fetched up front.
                 */}
-                <img className="grid__img" src={photo.src} alt="" decoding="async" />
+                {/*
+                  draggable is off so a drag across the ring turns it, instead of
+                  the browser picking the photo up as an image to drop somewhere.
+                */}
+                <img
+                  className="grid__img"
+                  src={photo.src}
+                  alt=""
+                  decoding="async"
+                  draggable={false}
+                />
               </div>
             );
           })}

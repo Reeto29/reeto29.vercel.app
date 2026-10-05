@@ -3,7 +3,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { PhotoGrid } from '../components/PhotoGrid';
-import { cylinder, grid, photos, ringStep, spin } from '../photos';
+import { bandSpan, cylinder, grid, photos, ringStep, spin } from '../photos';
 
 // import.meta.url is an http URL under the jsdom environment, so resolve from
 // the project root instead.
@@ -47,6 +47,7 @@ function stubEnvironment() {
 }
 
 let frames: FrameRequestCallback[] = [];
+let clock = 0;
 
 function spinAngle(stage: HTMLElement): number {
   return Number.parseFloat(stage.style.getPropertyValue('--spin'));
@@ -54,14 +55,34 @@ function spinAngle(stage: HTMLElement): number {
 
 /** Runs queued animation frames for roughly `seconds` of simulated time. */
 function advance(seconds: number, step = 16) {
-  let now = 0;
-
   for (let i = 0; i < Math.round((seconds * 1000) / step); i += 1) {
     const pending = frames;
     frames = [];
-    now += step;
-    for (const callback of pending) callback(now);
+    clock += step;
+    for (const callback of pending) callback(clock);
   }
+}
+
+/** Without a stylesheet the component falls back to the desktop ring step. */
+const STEP = ringStep(grid.tile, grid.gap);
+const SPAN = bandSpan(STEP);
+
+/** Each tile's angle on the ring as actually drawn: its slot, the spin, its wrap. */
+function tileAngles(stage: HTMLElement): number[] {
+  const spinDeg = spinAngle(stage);
+  return [...stage.querySelectorAll<HTMLElement>('.grid__tile')].map(
+    (tile) =>
+      Number(tile.style.getPropertyValue('--i')) * STEP +
+      spinDeg -
+      Number.parseFloat(tile.style.getPropertyValue('--wrap')),
+  );
+}
+
+/** Horizontal distance from the centre of the frame a ring angle projects to, in px. */
+function projectedX(degrees: number): number {
+  const theta = (degrees * Math.PI) / 180;
+  const { radius, perspective } = cylinder;
+  return (radius * Math.sin(theta) * perspective) / (perspective + radius * Math.cos(theta));
 }
 
 describe('photo ring', () => {
@@ -212,7 +233,9 @@ describe('photo ring', () => {
 
     // The transform must carry a default so the ring is still valid before the
     // loop paints its first frame.
-    expect(gridCss).toMatch(/rotateY\(calc\(var\(--a\)\s*\+\s*var\(--spin,\s*0deg\)\)\)/);
+    expect(gridCss).toMatch(
+      /rotateY\(calc\(var\(--a\)\s*\+\s*var\(--spin,\s*0deg\)\s*-\s*var\(--wrap,\s*0deg\)\)\)/,
+    );
   });
 
   it('writes the animation property to the stage the tiles inherit from', () => {
@@ -226,22 +249,31 @@ describe('photo ring', () => {
     // inherited animated value and freeze that tile in place.
     const tileBlock = gridCss.match(/\.grid__tile\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(tileBlock, '.grid__tile redeclares --spin').not.toMatch(/--spin\s*:/);
+    expect(tileBlock, '.grid__tile redeclares --wrap').not.toMatch(/--wrap\s*:/);
   });
 
-  it('sways rather than spinning a full turn', () => {
-    // A flat grid taken edge-on twice per cycle collapses every tile to a line.
-    expect(spin.autoRange).toBeGreaterThan(0);
-    expect(spin.autoRange).toBeLessThan(90);
-    expect(spin.autoPeriod).toBeGreaterThan(8);
+  it('turns at a steady, slow speed rather than swaying', () => {
+    // A photo should take around half a minute to cross the frame: fast enough to
+    // read as turning, slow enough not to pull the eye off the type.
+    expect(spin.speed).toBeGreaterThan(0.5);
+    expect(spin.speed).toBeLessThan(6);
+    expect(spin).not.toHaveProperty('autoRange');
   });
 
-  it('sweeps wide enough to read as a carousel rather than a wobble', () => {
-    // The original 22 degrees was chosen while the field was pinned at zero, so
-    // the amplitude had never actually been seen. Measured in a browser, 22
-    // degrees turns the outermost tiles by a few percent of their width; 34
-    // turns them visibly away while the centre pair stay square to the viewer.
-    expect(spin.autoRange).toBeGreaterThanOrEqual(30);
-    expect(spin.autoRange).toBeLessThan(50);
+  it('wraps tiles only where nobody can see it happen', () => {
+    // A tile wraps when its centre reaches half a band from the axis. At that point
+    // even its inner edge has to project outside a 1920px-wide frame, so the jump
+    // happens off screen rather than as a photo vanishing mid-frame.
+    expect(projectedX(SPAN / 2 - STEP / 2)).toBeGreaterThan(1920 / 2);
+
+    // Same on a phone, with the smaller step the stylesheet declares there.
+    const phoneStep = Number(
+      gridCss.match(/@media \(max-width: 40rem\)[\s\S]*?--step-deg:\s*([\d.]+)/)?.[1],
+    );
+    expect(projectedX(bandSpan(phoneStep) / 2 - phoneStep / 2)).toBeGreaterThan(430 / 2);
+
+    // And no tile is ever turned far enough to go edge-on.
+    expect(SPAN / 2).toBeLessThan(80);
   });
 
   it('lays the band out on a cylinder rather than one flat plane', () => {
@@ -328,10 +360,6 @@ describe('photo ring', () => {
     expect(declared).toBe(cylinder.perspective);
   });
 
-  it('turns slowly enough to read as a drift rather than a timer', () => {
-    expect(spin.autoPeriod).toBeGreaterThan(60);
-  });
-
   it('fetches every photo up front, because lazy tiles never load off frame', () => {
     // The band is one row ten tiles wide, so most tiles start outside the
     // viewport. loading="lazy" never fetches them and they swing into view as
@@ -397,16 +425,66 @@ describe('photo grid rotation', () => {
     vi.unstubAllGlobals();
   });
 
-  it('stays within the sway range over a whole cycle', () => {
+  it('keeps turning the same way instead of swinging back', () => {
     frames = [];
     stubEnvironment();
 
     const { container } = render(<PhotoGrid />);
     const stage = container.querySelector('.grid__stage') as HTMLElement;
 
-    advance(spin.autoPeriod * 1.2);
+    // Sampled over several band-widths of travel. The spin itself is kept within
+    // one band, so the distance turned is measured step by step with the wrap
+    // undone; every step has to go the same way.
+    let previous = spinAngle(stage);
+    let travelled = 0;
 
-    expect(Math.abs(spinAngle(stage))).toBeLessThanOrEqual(spin.autoRange + 1);
+    for (let second = 0; second < (SPAN / spin.speed) * 3; second += 1) {
+      advance(1);
+      const current = spinAngle(stage);
+      let moved = current - previous;
+      if (moved < -SPAN / 2) moved += SPAN;
+      if (moved > SPAN / 2) moved -= SPAN;
+
+      expect(moved).toBeGreaterThan(0);
+      travelled += moved;
+      previous = current;
+    }
+
+    expect(travelled).toBeGreaterThan(SPAN * 2.5);
+
+    vi.unstubAllGlobals();
+  });
+
+  it('keeps every tile on the band as it wraps round', () => {
+    frames = [];
+    stubEnvironment();
+
+    const { container } = render(<PhotoGrid />);
+    const stage = container.querySelector('.grid__stage') as HTMLElement;
+
+    const wrapped = new Set<number>();
+
+    for (let second = 0; second < SPAN / spin.speed; second += 2) {
+      advance(2);
+
+      const angles = tileAngles(stage);
+      for (const angle of angles) {
+        expect(Math.abs(angle)).toBeLessThanOrEqual(SPAN / 2 + 0.01);
+      }
+
+      // Still evenly spaced: sorted, each neighbour is exactly one step on.
+      const sorted = [...angles].sort((a, b) => a - b);
+      for (let i = 1; i < sorted.length; i += 1) {
+        expect(sorted[i] - sorted[i - 1]).toBeCloseTo(STEP, 1);
+      }
+
+      stage.querySelectorAll<HTMLElement>('.grid__tile').forEach((tile, index) => {
+        if (Number.parseFloat(tile.style.getPropertyValue('--wrap')) !== 0) wrapped.add(index);
+      });
+    }
+
+    // Over one full band of travel, every tile has been carried round once.
+    expect(wrapped.size).toBe(photos.length);
 
     vi.unstubAllGlobals();
   });
@@ -445,7 +523,7 @@ describe('photo grid rotation', () => {
     vi.unstubAllGlobals();
   });
 
-  it('clamps the manual offset no matter how many keys are pressed', () => {
+  it('keeps the band whole however many keys are pressed', () => {
     frames = [];
     stubEnvironment();
 
@@ -456,50 +534,67 @@ describe('photo grid rotation', () => {
       stage.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
     }
 
-    expect(Math.abs(spinAngle(stage))).toBeLessThanOrEqual(spin.manualLimit + spin.autoRange + 1);
+    expect(Math.abs(spinAngle(stage))).toBeLessThanOrEqual(SPAN / 2 + 0.01);
+    for (const angle of tileAngles(stage)) {
+      expect(Math.abs(angle)).toBeLessThanOrEqual(SPAN / 2 + 0.01);
+    }
 
     vi.unstubAllGlobals();
   });
 
-  it('turns on drag and eases back towards centre afterwards', () => {
+  it('turns on drag and settles back into the steady turn afterwards', () => {
     frames = [];
     stubEnvironment();
 
     const { container } = render(<PhotoGrid />);
     const stage = container.querySelector('.grid__stage') as HTMLElement;
 
-    const down = (x: number) =>
-      stage.dispatchEvent(
-        Object.assign(new MouseEvent('pointerdown', { bubbles: true, clientX: x }), {
-          pointerId: 1,
-          pointerType: 'mouse',
-        }),
-      );
-    const move = (x: number) =>
-      stage.dispatchEvent(
-        Object.assign(new MouseEvent('pointermove', { bubbles: true, clientX: x }), {
-          pointerId: 1,
-          pointerType: 'mouse',
-        }),
-      );
-    const up = (x: number) =>
-      stage.dispatchEvent(
-        Object.assign(new MouseEvent('pointerup', { bubbles: true, clientX: x }), {
-          pointerId: 1,
-          pointerType: 'mouse',
-        }),
-      );
+    const pointer = (type: string, x: number, timeStamp: number) => {
+      const event = Object.assign(new MouseEvent(type, { bubbles: true, clientX: x }), {
+        pointerId: 1,
+        pointerType: 'mouse',
+      });
+      Object.defineProperty(event, 'timeStamp', { value: timeStamp });
+      stage.dispatchEvent(event);
+    };
 
-    down(200);
-    move(500);
+    const before = spinAngle(stage);
+    pointer('pointerdown', 200, 0);
+    pointer('pointermove', 300, 16);
     const dragged = spinAngle(stage);
-    up(500);
+    pointer('pointerup', 300, 20);
 
-    expect(Math.abs(dragged)).toBeGreaterThan(1);
+    expect(Math.abs(dragged - before)).toBeGreaterThan(1);
 
-    // Let the offset recentre: |angle| should fall, ignoring the sway itself.
-    advance(spin.autoPeriod * 3);
-    expect(Math.abs(spinAngle(stage))).toBeLessThanOrEqual(spin.autoRange + 1);
+    // Once the fling has worn off, the ring is back to its own speed, not
+    // drifting back towards where it started.
+    advance(6);
+    const a = spinAngle(stage);
+    advance(1);
+    const b = spinAngle(stage);
+    let moved = b - a;
+    if (moved < -SPAN / 2) moved += SPAN;
+    expect(moved).toBeCloseTo(spin.speed, 1);
+
+    vi.unstubAllGlobals();
+  });
+
+  it('turns on drag instead of letting the browser pick a photo up', () => {
+    frames = [];
+    stubEnvironment();
+
+    const { container } = render(<PhotoGrid />);
+    const stage = container.querySelector('.grid__stage') as HTMLElement;
+
+    for (const img of stage.querySelectorAll('img')) {
+      expect(img).toHaveAttribute('draggable', 'false');
+    }
+
+    const drag = new Event('dragstart', { bubbles: true, cancelable: true });
+    stage.querySelector('img')?.dispatchEvent(drag);
+    expect(drag.defaultPrevented).toBe(true);
+
+    expect(gridCss).toMatch(/\.grid__img\s*\{[^}]*pointer-events:\s*none/);
 
     vi.unstubAllGlobals();
   });

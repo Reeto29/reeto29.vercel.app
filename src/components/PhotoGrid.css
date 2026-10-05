@@ -21,6 +21,9 @@
 
 .grid__stage[data-draggable='true'] {
   cursor: grab;
+  /* A drag turns the ring; it should not select the photos or drag them out. */
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .grid__stage[data-draggable='true']:active {
@@ -90,6 +93,11 @@
 
     --i is the tile's index and --step is inherited from the field, so the angle
     follows automatically when the tile size changes at a breakpoint.
+
+    --wrap is written per tile by PhotoGrid.tsx: a whole number of band-widths
+    that moves a tile which has turned off one end of the band back to the other
+    end, out of sight. Like --spin, it must not be declared here, or the local
+    value would outrank the one the script writes.
   */
   --i: 0;
   --a: calc(var(--i) * var(--step));
@@ -99,7 +107,7 @@
   left: 50%;
   width: var(--tile);
   height: var(--tile);
-  transform: translateX(-50%) rotateY(calc(var(--a) + var(--spin, 0deg)))
+  transform: translateX(-50%) rotateY(calc(var(--a) + var(--spin, 0deg) - var(--wrap, 0deg)))
     translateZ(calc(var(--radius) * -1));
   border-radius: 12px;
   overflow: hidden;
@@ -111,6 +119,9 @@
   height: 100%;
   object-fit: cover;
   transform: scale(var(--zoom, 1.12));
+  -webkit-user-drag: none;
+  /* The stage handles every pointer event, so the image never becomes a target. */
+  pointer-events: none;
   filter: saturate(0.92) brightness(1.02) contrast(1.04);
 }
 
