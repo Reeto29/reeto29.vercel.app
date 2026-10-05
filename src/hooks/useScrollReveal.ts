@@ -5,7 +5,7 @@ import { useEffect } from 'react';
  *
  * Targets are the entry rows in the list sections (work, projects) so those
  * stagger one by one, or the whole body of a section that is a single block
- * (records, skills, education, contact). Hiding is applied only once this hook
+ * (records, education). Hiding is applied only once this hook
  * has run, via `data-reveal` on the root, so a visitor without JS — or a script
  * that never loads — simply sees everything. Under reduced motion the hook does
  * not opt in at all, which leaves the page completely static rather than fading

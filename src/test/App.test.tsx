@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import App from '../App';
-import { experience, SECTION_IDS, SECTION_LABELS } from '../content';
+import { experience, profile, SECTION_IDS, SECTION_LABELS, socials } from '../content';
 
 beforeEach(() => {
   window.location.hash = '';
@@ -129,17 +129,63 @@ describe('App', () => {
       expect(text, `no figure in: ${text}`).toMatch(/\d/);
       expect(text.endsWith('.')).toBe(true);
 
-      // It belongs to the header block, under the company and its location, and
-      // not to the body where the work itself is described.
-      expect(blurb?.closest('.row__meta')).not.toBeNull();
-      expect(blurb?.closest('.row__body')).toBeNull();
-
-      const meta = blurb?.closest('.row__meta');
-      const kids = [...(meta?.children ?? [])];
-      expect(kids.indexOf(blurb as Element)).toBeGreaterThan(
-        kids.indexOf(row.querySelector('.row__where') as Element),
-      );
+      // Collapsed, the description is the body of the entry: it sits opposite the
+      // company, above the toggle, and stays visible when the details are shut.
+      expect(blurb?.closest('.row__body')).not.toBeNull();
+      expect(blurb?.closest('.row__details')).toBeNull();
     }
+  });
+
+  it('keeps the details behind a see more toggle under the description', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+
+    const rows = [...container.querySelectorAll<HTMLElement>('#work .rows > .row')];
+
+    rows.forEach((row, index) => {
+      const toggle = row.querySelector('.row__toggle');
+      const details = row.querySelector('.row__details');
+
+      expect(toggle?.textContent).toMatch(/^›see more/);
+      expect(toggle?.textContent).toContain(experience[index].company);
+      expect(toggle?.previousElementSibling).toHaveClass('row__blurb');
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      expect(toggle?.getAttribute('aria-controls')).toBe(details?.id);
+
+      // Collapsed details cannot be tabbed into or read out.
+      expect(details).toHaveAttribute('inert');
+    });
+
+    const [first, second] = rows;
+    await user.click(first.querySelector('.row__toggle') as HTMLElement);
+
+    expect(first.querySelector('.row__toggle')).toHaveAttribute('aria-expanded', 'true');
+    expect(first.querySelector('.row__toggle')?.textContent).toMatch(/see less/);
+    expect(first.querySelector('.row__details')).not.toHaveAttribute('inert');
+    expect(first.querySelectorAll('.row__notes li')).toHaveLength(experience[0].highlights.length);
+
+    // Opening one leaves the others as they were.
+    expect(second.querySelector('.row__toggle')).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(first.querySelector('.row__toggle') as HTMLElement);
+    expect(first.querySelector('.row__details')).toHaveAttribute('inert');
+  });
+
+  it('puts the contact links under the intro instead of in a section', () => {
+    const { container } = render(<App />);
+
+    const reach = container.querySelector('.masthead .masthead__reach');
+    expect(reach?.textContent).toMatch(/find me/i);
+
+    const hrefs = [...(reach?.querySelectorAll('a') ?? [])].map((link) =>
+      link.getAttribute('href'),
+    );
+    expect(hrefs).toContain(`mailto:${profile.email}`);
+    for (const link of socials.filter((social) => social.icon !== 'email')) {
+      expect(hrefs).toContain(link.href);
+    }
+
+    expect(container.querySelector('#contact')).toBeNull();
   });
 
   it('offers a skip link as the first focusable element', async () => {
@@ -157,7 +203,7 @@ describe('App', () => {
     Element.prototype.scrollIntoView = scrollIntoView;
 
     try {
-      window.location.hash = '#skills';
+      window.location.hash = '#education';
       render(<App />);
 
       expect(scrollIntoView).toHaveBeenCalled();

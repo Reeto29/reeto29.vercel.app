@@ -72,6 +72,25 @@
   line-height: 1.6;
 }
 
+/* Email and profiles in one line under the intro, labelled like a section. */
+.masthead__reach {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.375rem 1.25rem;
+  margin-top: 1rem;
+  font-size: 15px;
+}
+
+.masthead__reach-label {
+  color: var(--t-label);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: var(--label-track);
+}
+
 /* Rows: meta column on the left, prose on the right. */
 .rows {
   display: flex;
@@ -150,17 +169,79 @@
   min-width: 0;
 }
 
-/*
-  The company blurb, in the header column under the location. It runs the full
-  width of that column like .row__where does, so it starts on its own line instead
-  of trying to sit beside the dates.
-*/
+/* The company blurb: all a collapsed entry says, so it reads as the entry's prose. */
 .row__blurb {
-  width: 100%;
-  margin-top: 0.25rem;
-  color: var(--t-meta);
-  font-size: 13px;
-  line-height: 1.5;
+  color: var(--t-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* "see more": a quiet text toggle, with a chevron that turns down when open. */
+.row__toggle {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--t-label);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.row__toggle:hover,
+.row__toggle[aria-expanded='true'] {
+  color: var(--t-primary);
+}
+
+.row__toggle:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+.row__chevron {
+  flex: 0 0 auto;
+  display: inline-block;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+  transition:
+    transform 0.2s ease,
+    color 0.15s ease;
+}
+
+.row__toggle:hover .row__chevron {
+  color: var(--accent);
+}
+
+.row__toggle[aria-expanded='true'] .row__chevron {
+  transform: rotate(90deg);
+}
+
+.row__details {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease;
+}
+
+.row[data-open='true'] .row__details {
+  grid-template-rows: 1fr;
+}
+
+.row__details-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row__chevron,
+  .row__details {
+    transition: none;
+  }
 }
 
 .row__desc {
@@ -240,7 +321,6 @@
   vertical-align: baseline;
 }
 
-/* Skills sit in two columns so the section fills the width without cards. */
 /*
   Education. The degree is a single long line, so it runs the full width of the
   section with the school and coursework stacked beneath it. The serif treatment
@@ -276,30 +356,19 @@
   font-variant-numeric: tabular-nums;
 }
 
-.skills {
+/*
+  Coursework runs the full width of the section, like the degree above it, so the
+  list wraps over two lines instead of four.
+*/
+.edu__coursework {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.25rem 3rem;
-}
-@media (min-width: 46rem) {
-  .skills {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-.skills__row {
-  display: grid;
-  grid-template-columns: 1fr;
   gap: 0.25rem;
-}
-
-.skills--inset {
-  margin-top: 1.75rem;
-  padding-top: 1.5rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
   border-top: 1px solid var(--hairline);
 }
 
-.skills__key {
+.edu__key {
   color: var(--t-label);
   font-family: var(--font-mono);
   font-size: 10px;
@@ -308,29 +377,11 @@
   letter-spacing: var(--label-track);
 }
 
-.skills__val {
+.edu__courses {
   margin: 0;
   color: var(--t-secondary);
   font-size: 14px;
   line-height: 1.7;
-}
-
-.contact__line {
-  font-size: 15px;
-}
-
-.contact__line + .contact__line {
-  margin-top: 0.5rem;
-}
-
-.contact__sep {
-  color: var(--t-label);
-}
-
-.contact__note {
-  margin-top: 1.5rem;
-  color: var(--t-label);
-  font-size: 13px;
 }
 
 .footnote {

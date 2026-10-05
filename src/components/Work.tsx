@@ -1,13 +1,17 @@
+import { useId, useState } from 'react';
 import type { Experience as ExperienceEntry } from '../types';
 import { experience, socials } from '../content';
 import { ExternalArrow } from './icons';
 
 function Entry({ entry }: { entry: ExperienceEntry }) {
+  const [open, setOpen] = useState(false);
+  const detailsId = useId();
+
   const startYear = entry.startDate.slice(-4);
   const endYear = entry.endDate.slice(-4);
 
   return (
-    <li className="row">
+    <li className="row" data-open={open ? 'true' : undefined}>
       <div className="row__meta">
         {/*
           Company leads and the role sits under it. Reading the list by employer
@@ -26,25 +30,45 @@ function Entry({ entry }: { entry: ExperienceEntry }) {
           {startYear === endYear ? startYear : `${startYear} – ${endYear}`}
         </span>
         <span className="row__where">{entry.location}</span>
-
-        {/*
-          What the company is and how big it is, sitting under where it is. It reads
-          as part of the header block rather than as another line of work, so the
-          bullets opposite start with what the role was actually about.
-        */}
-        <p className="row__blurb">{entry.blurb}</p>
       </div>
 
       <div className="row__body">
-        <p className="row__desc">{entry.focus}</p>
+        {/*
+          Collapsed, the body is just what the company is. The work itself sits
+          behind "see more", so the list scans as a run of employers first.
+        */}
+        <p className="row__blurb">{entry.blurb}</p>
 
-        <ul className="row__notes">
-          {entry.highlights.map((highlight) => (
-            <li key={highlight}>{highlight}</li>
-          ))}
-        </ul>
+        <button
+          type="button"
+          className="row__toggle"
+          aria-expanded={open}
+          aria-controls={detailsId}
+          onClick={() => setOpen((value) => !value)}
+        >
+          <span className="row__chevron" aria-hidden="true">
+            ›
+          </span>
+          {open ? 'see less' : 'see more'}
+          <span className="visually-hidden"> about {entry.company}</span>
+        </button>
 
-        <p className="row__stack">{entry.tech.join(', ')}</p>
+        {/*
+          Collapsed by animating the grid row from 0fr to 1fr, which lets the
+          details slide to their natural height without measuring them. While
+          closed they are inert, so nothing hidden can be tabbed to or read out.
+        */}
+        <div className="row__details" id={detailsId} inert={!open}>
+          <div className="row__details-inner">
+            <ul className="row__notes">
+              {entry.highlights.map((highlight) => (
+                <li key={highlight}>{highlight}</li>
+              ))}
+            </ul>
+
+            <p className="row__stack">{entry.tech.join(', ')}</p>
+          </div>
+        </div>
       </div>
     </li>
   );

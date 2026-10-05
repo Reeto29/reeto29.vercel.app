@@ -1,17 +1,10 @@
-import type { Education, Experience, Project, SkillGroup, SocialLink } from './types';
+import type { Education, Experience, Project, SocialLink } from './types';
 
 /**
  * Section ids in page order. `SectionList` and the nav are derived from this so a
  * link can never point at a section that does not exist.
  */
-export const SECTION_IDS = [
-  'work',
-  'projects',
-  'skills',
-  'education',
-  'contact',
-  'records',
-] as const;
+export const SECTION_IDS = ['work', 'projects', 'education', 'records'] as const;
 
 export type SectionId = (typeof SECTION_IDS)[number];
 
@@ -25,9 +18,7 @@ export const SECTION_LABELS: Record<SectionId, string> = {
   records: 'music i like',
   work: 'work',
   projects: 'projects',
-  skills: 'skills',
   education: 'education',
-  contact: 'contact',
 };
 
 export const profile = {
@@ -52,10 +43,9 @@ export const experience: Experience[] = [
     company: 'Theory Ventures',
     url: 'https://theoryvc.com/',
     blurb:
-      'early-stage venture capital firm investing $1-40m into software companies, with $688m under management across two funds.',
+      '15-person venture firm led by tomasz tunguz, investing in ai and data companies with $688m across just two funds.',
     location: 'San Francisco, CA',
     role: 'AI Engineer Intern',
-    focus: 'async agent tasks, autonomous research',
     tech: ['Python', 'FastAPI', 'PostgreSQL', 'GCP', 'FastMCP'],
     startDate: 'May 2026',
     endDate: 'Aug 2026',
@@ -70,10 +60,9 @@ export const experience: Experience[] = [
     company: 'Wealthsimple',
     url: 'https://www.wealthsimple.com/en-ca',
     blurb:
-      'canadian brokerage and bank holding $155.6 billion for 3.6 million clients, as of june 2026.',
+      'canadian fintech valued at $10 billion, managing $155.6 billion in assets for 3.6 million clients.',
     location: 'Toronto, ON',
     role: 'Software Engineer Intern',
-    focus: 'product analytics, data quality',
     tech: ['Python', 'SQL', 'dbt', 'Airflow', 'Preset'],
     startDate: 'Jan 2026',
     endDate: 'Apr 2026',
@@ -88,10 +77,9 @@ export const experience: Experience[] = [
     company: 'Toronto Stock Exchange',
     url: 'https://www.tsx.com/',
     blurb:
-      'operator of the toronto stock exchange and the exchanges around it, with a market capitalisation of ca$14.4 billion.',
+      'canada\u2019s main stock exchange, home to about 40% of the world\u2019s public mining companies, more than any other market.',
     location: 'Toronto, ON',
     role: 'Software Engineer Intern',
-    focus: 'market surveillance, query cost',
     tech: ['Python', 'SQL', 'Presto', 'Hive', 'Apache Spark'],
     startDate: 'May 2025',
     endDate: 'Aug 2025',
@@ -105,10 +93,9 @@ export const experience: Experience[] = [
     company: 'Bank of Canada',
     url: 'https://www.bankofcanada.ca/',
     blurb:
-      'canada\u2019s central bank, running a $240 billion balance sheet and setting the overnight rate.',
+      'canada\u2019s central bank: sets interest rates for a ca$3 trillion economy and is the sole issuer of its banknotes.',
     location: 'Ottawa, ON',
     role: 'Software Engineer Intern',
-    focus: 'commodities pipelines, applied nlp',
     tech: ['Python', 'PyTorch', 'Databricks', 'Azure Data Factory'],
     startDate: 'Sep 2024',
     endDate: 'Dec 2024',
@@ -122,10 +109,9 @@ export const experience: Experience[] = [
     company: 'École de Technologie Supérieure',
     url: 'https://www.etsmtl.ca/',
     blurb:
-      'applied engineering school in montreal that trains a quarter of every engineer in quebec, with 11,000 students.',
+      'montreal\u2019s engineering school: a quarter of quebec\u2019s new engineers graduate from here, 2nd in canada for engineering degrees.',
     location: 'Montreal, QC',
     role: 'Research Intern',
-    focus: 'high-performance computing, bayesian optimization',
     tech: ['C', 'Python', 'SimGrid', 'ytopt'],
     startDate: 'Jan 2024',
     endDate: 'Apr 2024',
@@ -138,10 +124,10 @@ export const experience: Experience[] = [
   {
     company: 'Ciena Corporation',
     url: 'https://www.ciena.com/',
-    blurb: 'optical networking equipment maker, with $4.8 billion in fiscal 2025 revenue.',
+    blurb:
+      'the #1 optical networking supplier to cloud providers worldwide, with $4.77 billion in fiscal 2025 revenue.',
     location: 'Ottawa, ON',
     role: 'Software Engineer Intern',
-    focus: 'log triage, internal tooling',
     tech: ['Python', 'SQL'],
     startDate: 'May 2023',
     endDate: 'Aug 2023',
@@ -165,65 +151,6 @@ export const projects: Project[] = [
         label: 'paper',
         href: 'https://drive.google.com/file/d/1aSMlfpieOhFJwanJBxsmo3vzqLbcT-Ge/view',
       },
-    ],
-  },
-];
-
-export const skills: SkillGroup[] = [
-  {
-    category: 'Languages',
-    items: ['Python', 'SQL', 'TypeScript', 'JavaScript', 'C', 'Bash', 'Racket'],
-  },
-  {
-    category: 'Frameworks',
-    items: [
-      'FastAPI',
-      'Pydantic',
-      'SQLAlchemy',
-      'Alembic',
-      'Docker',
-      'FastMCP',
-      'ASGI / Uvicorn',
-      'REST APIs',
-      'JSONB',
-    ],
-  },
-  {
-    category: 'Cloud',
-    items: [
-      'GCP (Cloud Run, Cloud Run Jobs, Cloud Scheduler, Cloud SQL)',
-      'Secret Manager',
-      'Workload Identity Federation',
-      'PostgreSQL',
-    ],
-  },
-  {
-    category: 'Data & ML',
-    items: [
-      'dbt',
-      'Airflow',
-      'Databricks',
-      'PySpark',
-      'Redshift',
-      'Presto',
-      'PyTorch',
-      'Transformers',
-      'scikit-learn',
-      'MotherDuck',
-    ],
-  },
-  {
-    category: 'Agents & tooling',
-    items: [
-      'Sail SDK (Sailboxes)',
-      'OpenCode',
-      'ContextVars',
-      'W3C Tracing',
-      'OAuth / OIDC',
-      'HMAC',
-      'pytest',
-      'uv',
-      'Ruff',
     ],
   },
 ];

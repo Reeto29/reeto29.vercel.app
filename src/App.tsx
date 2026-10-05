@@ -4,9 +4,9 @@ import { useScrollReveal } from './hooks/useScrollReveal';
 import { PhotoGrid } from './components/PhotoGrid';
 import { Work } from './components/Work';
 import { RecordShelf } from './components/RecordShelf';
-import { Education, Projects, Skills } from './components/Sections';
-import { Contact } from './components/Contact';
+import { Education, Projects } from './components/Sections';
 import { TableOfContents } from './components/TableOfContents';
+import { ExternalArrow } from './components/icons';
 
 export default function App() {
   useHashScroll();
@@ -42,6 +42,33 @@ export default function App() {
             </p>
 
             <p className="masthead__summary">{profile.summary}</p>
+
+            {/*
+              Contact lives here rather than in a section at the bottom: the intro
+              says what is being looked for, so the way to get in touch sits right
+              under it, where a reader already is.
+            */}
+            <p className="masthead__reach">
+              <span className="masthead__reach-label">find me</span>
+              <a className="sweep" href={`mailto:${profile.email}`}>
+                {profile.email}
+              </a>
+              {socials
+                .filter((link) => link.icon !== 'email')
+                .map((link) => (
+                  <a
+                    key={link.href}
+                    className="sweep"
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {link.label}
+                    <ExternalArrow className="inline-arrow" />
+                    <span className="visually-hidden"> (opens in new tab)</span>
+                  </a>
+                ))}
+            </p>
           </header>
         </div>
       </div>
@@ -50,9 +77,7 @@ export default function App() {
         <main id="main" tabIndex={-1}>
           <Work />
           <Projects />
-          <Skills />
           <Education />
-          <Contact />
           <RecordShelf />
         </main>
 

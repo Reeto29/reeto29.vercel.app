@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { education, experience, profile, projects, SECTION_IDS, skills, socials } from '../content';
+import { education, experience, profile, projects, SECTION_IDS, socials } from '../content';
 
 describe('content integrity', () => {
   it('exposes an email', () => {
@@ -18,7 +18,7 @@ describe('content integrity', () => {
     for (const entry of experience) {
       expect(entry.company).not.toBe('');
       expect(entry.role).not.toBe('');
-      expect(entry.focus).not.toBe('');
+      expect(entry.blurb.trim()).not.toBe('');
       expect(entry.tech.length).toBeGreaterThan(0);
       expect(entry.highlights.length).toBeGreaterThan(0);
     }
@@ -53,7 +53,7 @@ describe('content integrity', () => {
   });
 
   it('avoids filler phrasing in the copy', () => {
-    const copy = JSON.stringify({ profile, experience, projects, skills });
+    const copy = JSON.stringify({ profile, experience, projects });
 
     for (const filler of [
       'seamless',
@@ -82,7 +82,7 @@ describe('content integrity', () => {
 
   it('keeps em dashes out of the prose', () => {
     // The education year range legitimately uses an en dash; prose should not.
-    const prose = JSON.stringify({ profile, experience, projects, skills });
+    const prose = JSON.stringify({ profile, experience, projects });
 
     expect(prose).not.toContain('—');
   });
@@ -93,12 +93,6 @@ describe('content integrity', () => {
       for (const link of project.links) {
         expect(link.href).toMatch(/^https?:\/\//);
       }
-    }
-  });
-
-  it('has no duplicate skill entries within a group', () => {
-    for (const group of skills) {
-      expect(new Set(group.items).size).toBe(group.items.length);
     }
   });
 

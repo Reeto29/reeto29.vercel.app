@@ -1,4 +1,4 @@
-import { education, projects, skills } from '../content';
+import { education, projects } from '../content';
 import { ExternalArrow } from './icons';
 
 export function Projects() {
@@ -47,27 +47,6 @@ export function Projects() {
   );
 }
 
-export function Skills() {
-  return (
-    <section className="section" id="skills" aria-labelledby="skills-heading">
-      <h2 className="label section__label" id="skills-heading">
-        skills
-      </h2>
-
-      <div className="section__body">
-        <dl className="skills">
-          {skills.map((group) => (
-            <div className="skills__row" key={group.category}>
-              <dt className="skills__key">{group.category}</dt>
-              <dd className="skills__val">{group.items.join(', ')}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-    </section>
-  );
-}
-
 export function Education() {
   const [degree] = education;
 
@@ -93,11 +72,9 @@ export function Education() {
           </span>
         </p>
 
-        <dl className="skills skills--inset">
-          <div className="skills__row">
-            <dt className="skills__key">coursework</dt>
-            <dd className="skills__val">{degree.coursework.join(', ')}</dd>
-          </div>
+        <dl className="edu__coursework">
+          <dt className="edu__key">coursework</dt>
+          <dd className="edu__courses">{degree.coursework.join(', ')}</dd>
         </dl>
       </div>
     </section>
