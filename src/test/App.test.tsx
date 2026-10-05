@@ -49,6 +49,18 @@ describe('App', () => {
     }
   });
 
+  it('renders the sections in the order SECTION_IDS declares', () => {
+    const { container } = render(<App />);
+
+    // The page order and the nav order come from the same list, so the table of
+    // contents can never point at a different order than the page itself shows.
+    const rendered = [...container.querySelectorAll('main section[id]')].map(
+      (section) => section.id,
+    );
+
+    expect(rendered).toEqual([...SECTION_IDS]);
+  });
+
   it('gives each section an accessible name via a labelled heading', () => {
     const { container } = render(<App />);
 
